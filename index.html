@@ -2,15 +2,35 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>情緒紅綠燈互動教材</title>
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 與 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 以解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; }
-        #root { min-height: 100vh; }
+        /* 🏆 UDL 平板防護機制：完全禁用滑動、縮放與文字反白，保護學生專注力 */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden !important; 
+            touch-action: none !important; 
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #root { 
+            height: 100%; 
+            width: 100%; 
+            display: flex; 
+        }
+        /* 隱藏捲軸 */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -19,15 +39,30 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const VolumeIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>;
-        const RefreshIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>;
-        const CheckIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
-        const HeartIcon = ({ size = 24, fill = "none", className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>;
-        const SettingsIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
-        const TypeIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>;
-        const GamepadIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="2"></rect></svg>;
-        const KeyboardIcon = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="8" y1="12" x2="8.01" y2="12"></line><line x1="12" y1="12" x2="12.01" y2="12"></line><line x1="16" y1="12" x2="16.01" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>;
+        // --- 內建圖示模組 ---
+        const VolumeIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+        );
+        const RefreshIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+        );
+        const CheckIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        );
+        const HeartIcon = ({ size = 24, fill = "none", className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        );
+        const SettingsIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        );
+        const TypeIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+        );
+        const GamepadIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="2"></rect></svg>
+        );
 
+        // --- 主程式開始 ---
         const App = () => {
           const [currentStep, setCurrentStep] = useState('checkIn');
           const [selectedEmotion, setSelectedEmotion] = useState(null);
@@ -36,9 +71,10 @@
           const [voices, setVoices] = useState([]);
           const [selectedVoiceURI, setSelectedVoiceURI] = useState('');
           const [font, setFont] = useState('sans');
+          const [isTransitioning, setIsTransitioning] = useState(false); // 控制過場，防止連點干擾
 
-          // 🎮 新增：支援鍵盤與特教開關模式
-          const [activeInput, setActiveInput] = useState('none'); // 'none', 'gamepad', 'keyboard'
+          // 遊戲手把狀態
+          const [gamepadConnected, setGamepadConnected] = useState(false);
           const [focusIndex, setFocusIndex] = useState(0); 
           const [popTrigger, setPopTrigger] = useState(0); 
           
@@ -51,39 +87,7 @@
             setFocusIndex(0);
           }, [currentStep]);
 
-          // ⌨️ 鍵盤輔具支援 (完美模擬特教單鍵開關)
-          useEffect(() => {
-            const handleKeyDown = (e) => {
-              // 忽略設定面板的按鍵干擾
-              if(e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
-              
-              setActiveInput('keyboard');
-              const state = appStateRef.current;
-              const maxIndex = (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 : 0;
-
-              if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                setFocusIndex(prev => Math.max(0, prev - 1));
-              } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                setFocusIndex(prev => Math.min(maxIndex, prev + 1));
-              } else if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const targetButton = document.getElementById(`item-${state.focusIndex}`);
-                if (targetButton) targetButton.click();
-              }
-
-              // 冷靜階段：任何鍵都能觸發泡泡
-              if (state.currentStep === 'coolDown') {
-                 setPopTrigger(t => t + 1);
-              }
-            };
-            
-            window.addEventListener('keydown', handleKeyDown);
-            return () => window.removeEventListener('keydown', handleKeyDown);
-          }, []);
-
-          // 🎮 手把輪詢系統 (保留給接線或配對成功的狀況)
+          // 手把輪詢
           useEffect(() => {
             let rAF;
             let prevBtns = Array(20).fill(false);
@@ -94,7 +98,7 @@
               const gp = gamepads.find(g => g !== null);
 
               if (gp) {
-                if (activeInput !== 'gamepad') setActiveInput('gamepad');
+                if (!gamepadConnected) setGamepadConnected(true);
 
                 const pressed = gp.buttons.map(b => b.pressed);
                 const state = appStateRef.current;
@@ -123,13 +127,15 @@
 
                 prevBtns = pressed;
                 prevAxes = [...gp.axes];
+              } else {
+                if (gamepadConnected) setGamepadConnected(false);
               }
               rAF = requestAnimationFrame(pollGamepad);
             };
 
             rAF = requestAnimationFrame(pollGamepad);
             return () => cancelAnimationFrame(rAF);
-          }, [activeInput]);
+          }, [gamepadConnected]);
 
           const getFontFamily = () => {
             switch(font) {
@@ -173,7 +179,8 @@
             }
           }, [selectedVoiceURI]);
 
-          const speak = (text) => {
+          // 🏆 修正語音同步功能：等待語音播完才執行 callback
+          const speak = (text, onEndCallback = null) => {
             if ('speechSynthesis' in window) {
               window.speechSynthesis.cancel();
               const utterance = new SpeechSynthesisUtterance(text);
@@ -184,7 +191,23 @@
                 const voice = voices.find(v => v.voiceURI === selectedVoiceURI);
                 if (voice) utterance.voice = voice;
               }
+              
+              if (onEndCallback) {
+                let isFired = false;
+                const callback = () => {
+                  if (!isFired) {
+                    isFired = true;
+                    onEndCallback();
+                  }
+                };
+                utterance.onend = callback;
+                utterance.onerror = callback; // 遇到錯誤也放行，避免卡死
+                // 安全機制：以字數推算時間，確保就算瀏覽器沒觸發 onend 也能強行放行
+                setTimeout(callback, (text.length * 350) + 1500); 
+              }
               window.speechSynthesis.speak(utterance);
+            } else if (onEndCallback) {
+              setTimeout(onEndCallback, 1500); // 如果不支援語音，等 1.5 秒
             }
           };
 
@@ -222,12 +245,15 @@
             ]
           };
 
+          // 🏆 修正過場邏輯：包裝在 isTransitioning 保護下
           const handleEmotionSelect = (emotionId) => {
+            if (isTransitioning) return;
+            setIsTransitioning(true);
             const emotion = emotions[emotionId];
             setSelectedEmotion(emotion);
-            speak(emotion.speech);
             
-            setTimeout(() => {
+            // 等待該情緒的描述語音播完後，才跳下一頁
+            speak(emotion.speech, () => {
               if (emotionId === 'green') {
                 setCurrentStep('wellDone');
                 speak('太棒了！保持這個好心情繼續學習吧！');
@@ -235,20 +261,26 @@
                 setCurrentStep('strategy');
                 speak('你需要什麼幫助呢？請選一個方法。');
               }
-            }, 1500);
+              setIsTransitioning(false);
+            });
           };
 
           const handleStrategySelect = (strategy) => {
+            if (isTransitioning) return;
+            setIsTransitioning(true);
             setSelectedStrategy(strategy);
-            speak(`好的，我們來${strategy.speech}`);
-            setCurrentStep('coolDown');
+            
+            speak(`好的，我們來${strategy.speech}`, () => {
+              setCurrentStep('coolDown');
+              setIsTransitioning(false);
+            });
           };
 
           const resetApp = () => {
+            if (isTransitioning) return;
             setCurrentStep('checkIn');
             setSelectedEmotion(null);
             setSelectedStrategy(null);
-            setActiveInput('none'); // 取消焦點
             speak('你現在感覺怎麼樣？');
           };
 
@@ -269,7 +301,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="bg-white/90 px-3 py-2 rounded-xl shadow-md text-sm font-bold text-gray-700 border-2 border-gray-200 outline-none cursor-pointer max-w-[200px] truncate"
+                  className="bg-white/90 px-3 py-2 rounded-xl shadow-md text-sm font-bold text-gray-700 border-2 border-gray-200 outline-none cursor-pointer max-w-[150px] sm:max-w-[200px] truncate"
                   title="選擇發音人"
                 >
                   {voices.map(v => (
@@ -286,11 +318,11 @@
                     const nextFont = font === 'sans' ? 'kai' : font === 'kai' ? 'round' : font === 'round' ? 'zhuyin' : 'sans';
                     setFont(nextFont);
                   }}
-                  className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-full shadow-md text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all"
+                  className="flex items-center gap-1 sm:gap-2 bg-white/90 px-3 py-2 sm:px-4 sm:py-2 rounded-full shadow-md text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all"
                   title="切換字體"
                 >
-                  <TypeIcon size={18} />
-                  字體: {font === 'sans' ? '黑體' : font === 'kai' ? '標楷體' : font === 'round' ? '圓體' : '注音體'}
+                  <TypeIcon size={16} />
+                  {font === 'sans' ? '黑體' : font === 'kai' ? '標楷' : font === 'round' ? '圓體' : '注音'}
                 </button>
 
                 <button
@@ -310,18 +342,17 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-full shadow-md text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all"
+                  className="flex items-center gap-1 sm:gap-2 bg-white/90 px-3 py-2 sm:px-4 sm:py-2 rounded-full shadow-md text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all"
                   title="切換語音音調"
                 >
-                  <SettingsIcon size={18} />
-                  音調: {pitch === 1 ? '正常' : pitch === 1.5 ? '可愛(高)' : '沉穩(低)'}
+                  <SettingsIcon size={16} />
+                  音調
                 </button>
               </div>
               
               {font === 'zhuyin' && (
-                <div className="mt-2 text-xs text-orange-600 bg-orange-100 p-2.5 rounded-lg border border-orange-300 shadow-sm max-w-[280px] text-left animate-pulse">
-                  💡 <b>展示提醒：</b><br/>
-                  請確認本機已安裝「文鼎標楷注音」字型。若未安裝，系統已啟動降級顯示。
+                <div className="mt-2 text-[10px] sm:text-xs text-orange-600 bg-orange-100 p-2 rounded-lg border border-orange-300 shadow-sm max-w-[200px] sm:max-w-[280px] text-left animate-pulse">
+                  💡 <b>提示：</b>若無注音請安裝「文鼎標楷注音」字型。
                 </div>
               )}
             </div>
@@ -376,12 +407,12 @@
             }, [trigger]);
 
             return (
-              <div className="grid grid-cols-4 gap-4 my-8 p-6 bg-pink-50 rounded-3xl border-4 border-pink-200 shadow-inner w-full max-w-sm mx-auto">
+              <div className="grid grid-cols-4 gap-3 sm:gap-4 my-4 sm:my-8 p-4 sm:p-6 bg-pink-50 rounded-3xl border-4 border-pink-200 shadow-inner w-full max-w-sm mx-auto">
                 {bubbles.map((popped, i) => (
                   <button
                     key={i}
                     onClick={() => toggle(i)}
-                    className={`w-16 h-16 rounded-full transition-all duration-200 shadow-md mx-auto focus:outline-none ${
+                    className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full transition-all duration-200 shadow-md mx-auto ${
                       popped ? 'bg-pink-400 scale-90 shadow-inner' : 'bg-pink-200 scale-100 hover:bg-pink-300'
                     }`}
                   />
@@ -401,14 +432,14 @@
             }, []);
 
             return (
-              <div className="my-16 flex flex-col items-center">
-                <div className="relative w-48 h-48 flex items-center justify-center">
+              <div className="my-8 sm:my-16 flex flex-col items-center">
+                <div className="relative w-32 h-32 sm:w-48 sm:h-48 flex items-center justify-center">
                   <div className={`absolute w-full h-full bg-blue-300 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-150' : 'scale-75'}`}></div>
                   <div className={`absolute w-3/4 h-3/4 bg-blue-500 rounded-full shadow-lg flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-125' : 'scale-90'}`}>
-                     <span className="text-white text-4xl font-bold tracking-widest">{phase}</span>
+                     <span className="text-white text-3xl sm:text-4xl font-bold tracking-widest">{phase}</span>
                   </div>
                 </div>
-                <p className="mt-20 text-2xl text-gray-600 font-bold animate-pulse">跟著氣球慢慢呼吸...</p>
+                <p className="mt-12 sm:mt-20 text-xl sm:text-2xl text-gray-600 font-bold animate-pulse">跟著氣球慢慢呼吸...</p>
               </div>
             );
           };
@@ -425,16 +456,16 @@
             const percentage = (timeLeft / seconds) * 100;
             
             return (
-              <div className="my-10 flex flex-col items-center">
+              <div className="my-4 sm:my-10 flex flex-col items-center">
                 <div 
-                  className="relative w-48 h-48 rounded-full bg-gray-200 border-8 border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-1000" 
+                  className="relative w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-gray-200 border-8 border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-1000" 
                   style={{ background: `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
                 >
-                  <div className="w-36 h-36 bg-white rounded-full flex items-center justify-center shadow-inner">
-                    <span className="text-5xl font-bold text-gray-700">{timeLeft}s</span>
+                  <div className="w-24 h-24 sm:w-36 sm:h-36 bg-white rounded-full flex items-center justify-center shadow-inner">
+                    <span className="text-4xl sm:text-5xl font-bold text-gray-700">{timeLeft}s</span>
                   </div>
                 </div>
-                <p className="mt-6 text-xl text-gray-500">休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ"/>完畢...</p>
+                <p className="mt-4 sm:mt-6 text-lg sm:text-xl text-gray-500">休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ"/>完畢...</p>
               </div>
             );
           };
@@ -459,29 +490,29 @@
 
             return (
               <div className="flex flex-col items-center w-full">
-                <div className="bg-blue-50 p-6 rounded-3xl mb-2 shadow-sm w-full max-w-sm flex flex-col items-center gap-4 border-2 border-blue-200">
+                <div className="bg-blue-50 p-4 sm:p-6 rounded-3xl mb-2 shadow-sm w-full max-w-sm flex flex-col items-center gap-3 sm:gap-4 border-2 border-blue-200">
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl animate-bounce">🎵</span>
-                    <span className="text-4xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎧</span>
-                    <span className="text-4xl animate-bounce" style={{ animationDelay: '0.4s' }}>🧸</span>
+                    <span className="text-3xl sm:text-4xl animate-bounce">🎵</span>
+                    <span className="text-3xl sm:text-4xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎧</span>
+                    <span className="text-3xl sm:text-4xl animate-bounce" style={{ animationDelay: '0.4s' }}>🧸</span>
                   </div>
-                  <p className="text-blue-800 font-bold text-lg tracking-wider">專屬冷靜音樂</p>
+                  <p className="text-blue-800 font-bold text-base sm:text-lg tracking-wider">專屬冷靜音樂</p>
                   
                   {audioSrc ? (
-                    <audio controls autoPlay loop className="w-full h-12 rounded-full shadow-inner" src={audioSrc}>
+                    <audio controls autoPlay loop className="w-full h-10 sm:h-12 rounded-full shadow-inner" src={audioSrc}>
                       您的瀏覽器不支援音樂播放
                     </audio>
                   ) : (
-                    <div className="flex flex-col items-center gap-3 w-full animate-fade-in">
-                      <p className="text-sm text-gray-600 font-bold">請選擇學生最熟悉的聲音：</p>
+                    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full animate-fade-in">
+                      <p className="text-xs sm:text-sm text-gray-600 font-bold">請選擇學生熟悉的聲音：</p>
                       <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                       <button 
                         onClick={() => fileInputRef.current.click()}
-                        className="w-full py-3 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 shadow-md transform hover:scale-105 transition-all text-lg font-bold flex items-center justify-center gap-2"
+                        className="w-full py-2 sm:py-3 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 shadow-md transform hover:scale-105 transition-all text-base sm:text-lg font-bold flex items-center justify-center gap-2"
                       >
                         📁 載入本機音檔
                       </button>
-                      <p className="text-xs text-indigo-400 mt-1">支援一般音樂或家長錄音檔，保護隱私不耗流量</p>
+                      <p className="text-[10px] sm:text-xs text-indigo-400 mt-1">保護隱私不耗流量</p>
                     </div>
                   )}
                 </div>
@@ -491,108 +522,156 @@
           };
 
           const getFocusStyle = (index) => {
-            return (activeInput !== 'none' && focusIndex === index) 
-              ? 'ring-8 ring-blue-500 ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
+            return gamepadConnected && focusIndex === index 
+              ? 'ring-4 sm:ring-8 ring-blue-500 ring-offset-2 sm:ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
               : '';
           };
 
+          // --- 渲染畫面 ---
           return (
-            <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-6 relative overflow-hidden" style={{ fontFamily: getFontFamily() }}>
+            <div className="h-full w-full bg-blue-50 flex flex-col items-center justify-center p-2 sm:p-6 relative overflow-hidden" style={{ fontFamily: getFontFamily() }}>
               <SettingsPanel />
               
-              {activeInput === 'gamepad' && (
-                <div className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full shadow border-2 border-green-300 font-bold animate-bounce">
-                  <GamepadIcon size={24} /> 已偵測到遊戲手把
-                </div>
-              )}
-              {activeInput === 'keyboard' && (
-                <div className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full shadow border-2 border-indigo-300 font-bold animate-bounce">
-                  <KeyboardIcon size={24} /> 已啟用特教鍵盤/單鍵輔具模式
+              {/* 手把連接提示 */}
+              {gamepadConnected && (
+                <div className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 sm:px-4 sm:py-2 rounded-full shadow border-2 border-green-300 font-bold text-sm sm:text-base animate-bounce">
+                  <GamepadIcon size={20} />
+                  已偵測到遊戲手把
                 </div>
               )}
 
+              {/* 畫面一：情緒大廳 (checkIn) */}
               {currentStep === 'checkIn' && (
-                <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden p-8 text-center border-4 border-blue-200">
-                  <div className="flex items-center justify-center gap-4 mb-8">
-                    <h1 className="text-4xl md:text-5xl font-bold text-blue-800">你現在感<Fix char="覺" z="ㄐㄩㄝˊ"/>怎麼樣？</h1>
-                    <button onClick={() => speak('你現在感覺怎麼樣？')} className="p-3 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors" title="朗讀題目">
-                      <VolumeIcon size={32} />
-                    </button>
+                <>
+                  {/* 🏆 新增：大廳專屬 QR Code */}
+                  {/* 請將網址 https://您的帳號.github.io/專案名稱/ 替換成您真實的 GitHub Pages 網址 */}
+                  <div className="absolute top-4 left-4 z-40 hidden sm:flex flex-col items-center bg-white/90 p-2 rounded-xl shadow border-2 border-blue-200">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://您的帳號.github.io/專案名稱/" alt="QR Code" className="w-16 h-16 lg:w-20 lg:h-20" />
+                    <span className="text-[10px] lg:text-xs text-blue-800 font-bold mt-1 tracking-wider">平板掃碼開啟</span>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {Object.values(emotions).map((emo, idx) => (
-                      <button id={`item-${idx}`} key={emo.id} onClick={() => handleEmotionSelect(emo.id)} className={`flex flex-col items-center justify-center p-8 rounded-2xl border-4 transition-all hover:scale-105 focus:outline-none ${emo.color} ${getFocusStyle(idx)}`}>
-                        <span className="text-8xl mb-4">{emo.icon}</span>
-                        <span className="text-2xl font-bold mb-2">{emo.label}</span>
-                        <span className="text-lg opacity-80">{emo.desc}</span>
+
+                  <div className="max-w-4xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col p-4 sm:p-8 text-center border-4 border-blue-200">
+                    <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-8 shrink-0">
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-800">你現在感<Fix char="覺" z="ㄐㄩㄝˊ"/>怎麼樣？</h1>
+                      <button 
+                        onClick={() => speak('你現在感覺怎麼樣？')}
+                        className={`p-2 sm:p-3 bg-blue-100 text-blue-600 rounded-full transition-colors ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-200'}`}
+                        disabled={isTransitioning}
+                      >
+                        <VolumeIcon size={28} />
                       </button>
-                    ))}
+                    </div>
+                    
+                    {/* 🏆 運用 Flexbox 確保在平板/手機上絕對不會超出版面滑動 */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 flex-1 min-h-0">
+                      {Object.values(emotions).map((emo, idx) => (
+                        <button
+                          id={`item-${idx}`}
+                          key={emo.id}
+                          onClick={() => handleEmotionSelect(emo.id)}
+                          disabled={isTransitioning}
+                          className={`flex-1 flex flex-col items-center justify-center p-2 sm:p-6 rounded-2xl border-4 transition-all ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} ${emo.color} ${getFocusStyle(idx)}`}
+                        >
+                          <span className="text-5xl sm:text-6xl md:text-8xl mb-2 sm:mb-4">{emo.icon}</span>
+                          <span className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">{emo.label}</span>
+                          <span className="text-sm sm:text-base md:text-lg opacity-80">{emo.desc}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
+              {/* 畫面二：選擇策略 (strategy) */}
               {currentStep === 'strategy' && (
-                <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl p-8 text-center border-4 border-blue-200">
-                  <div className="mb-8">
-                    <span className="text-6xl mb-4 block">{selectedEmotion.icon}</span>
-                    <div className="flex items-center justify-center gap-4">
-                      <h2 className="text-3xl font-bold text-gray-800">你現在是{selectedEmotion.name}，請選一個方法幫助自己：</h2>
-                      <button onClick={() => speak('請選一個方法幫助自己')} className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
-                        <VolumeIcon size={28} />
+                <div className="max-w-4xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-4 sm:p-8 text-center border-4 border-blue-200 flex flex-col justify-center">
+                  <div className="mb-4 sm:mb-8 shrink-0">
+                    <span className="text-5xl sm:text-6xl mb-2 sm:mb-4 block">{selectedEmotion.icon}</span>
+                    <div className="flex items-center justify-center gap-2 sm:gap-4">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">你現在是{selectedEmotion.name}，請選一個方法：</h2>
+                      <button 
+                        onClick={() => speak('請選一個方法幫助自己')}
+                        className={`p-1.5 sm:p-2 bg-gray-100 text-gray-600 rounded-full transition-colors ${isTransitioning ? 'opacity-50' : 'hover:bg-gray-200'}`}
+                        disabled={isTransitioning}
+                      >
+                        <VolumeIcon size={24} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 flex-1 min-h-0">
                     {strategies[selectedEmotion.id].map((strat, idx) => (
-                      <button id={`item-${idx}`} key={strat.id} onClick={() => handleStrategySelect(strat)} className={`flex flex-col items-center p-6 bg-indigo-50 border-4 border-indigo-200 rounded-2xl hover:bg-indigo-100 hover:border-indigo-400 transition-all focus:outline-none hover:-translate-y-1 ${getFocusStyle(idx)}`}>
-                        <span className="text-7xl mb-4">{strat.icon}</span>
-                        <span className="text-2xl font-bold text-indigo-900">{strat.label}</span>
+                      <button
+                        id={`item-${idx}`}
+                        key={strat.id}
+                        onClick={() => handleStrategySelect(strat)}
+                        disabled={isTransitioning}
+                        className={`flex-1 flex flex-col items-center justify-center p-3 sm:p-6 bg-indigo-50 border-4 border-indigo-200 rounded-2xl transition-all ${isTransitioning ? 'opacity-50' : 'hover:bg-indigo-100 hover:border-indigo-400 hover:-translate-y-1'} ${getFocusStyle(idx)}`}
+                      >
+                        <span className="text-5xl sm:text-7xl mb-2 sm:mb-4">{strat.icon}</span>
+                        <span className="text-xl sm:text-2xl font-bold text-indigo-900">{strat.label}</span>
                       </button>
                     ))}
                   </div>
 
-                  <button onClick={resetApp} className="mt-10 px-6 py-3 bg-gray-200 text-gray-700 text-xl font-bold rounded-xl hover:bg-gray-300 flex items-center justify-center mx-auto gap-2 focus:outline-none">
+                  <button 
+                    onClick={resetApp}
+                    disabled={isTransitioning}
+                    className="mt-4 sm:mt-10 px-4 py-2 sm:px-6 sm:py-3 bg-gray-200 text-gray-700 text-lg sm:text-xl font-bold rounded-xl hover:bg-gray-300 flex items-center justify-center mx-auto gap-2 shrink-0"
+                  >
                     <RefreshIcon size={24} /> 重新選擇心情
                   </button>
                 </div>
               )}
 
+              {/* 畫面三：執行冷靜 (coolDown) */}
               {currentStep === 'coolDown' && (
-                <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl p-10 text-center border-4 border-indigo-300">
-                  <h2 className="text-4xl font-bold text-indigo-900 mb-6 flex justify-center items-center gap-3">
+                <div className="max-w-2xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center border-4 border-indigo-300 flex flex-col">
+                  <h2 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-6 flex justify-center items-center gap-2 sm:gap-3 shrink-0">
                     正在執行：{selectedStrategy.label}
-                    <button onClick={() => speak(`正在執行${selectedStrategy.speech}`)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none">
-                       <VolumeIcon size={32} />
+                    <button onClick={() => speak(`正在執行${selectedStrategy.speech}`)} className="text-indigo-500 hover:text-indigo-700">
+                       <VolumeIcon size={28} />
                     </button>
                   </h2>
                   
-                  <div className="min-h-[300px] flex items-center justify-center w-full">
+                  <div className="flex-1 flex items-center justify-center w-full min-h-0">
                     {selectedStrategy.toolType === 'popit' && <PopItTool trigger={popTrigger} />}
                     {selectedStrategy.toolType === 'breathing' && <BreathingTool />}
                     {selectedStrategy.toolType === 'timer' && <VisualTimer seconds={selectedStrategy.time} />}
                     {selectedStrategy.toolType === 'music' && <MusicTool seconds={selectedStrategy.time} />}
                   </div>
 
-                  <button id="item-0" onClick={() => { setCurrentStep('wellDone'); speak('我感覺好多了！太棒了！'); }} className={`w-full py-5 bg-green-500 text-white text-3xl font-bold rounded-2xl hover:bg-green-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center gap-3 mt-8 focus:outline-none ${getFocusStyle(0)}`}>
-                    <CheckIcon size={40} /> 我感覺好多了！
+                  <button 
+                    id="item-0"
+                    onClick={() => {
+                      if (isTransitioning) return;
+                      setCurrentStep('wellDone');
+                      speak('我感覺好多了！太棒了！');
+                    }}
+                    className={`w-full py-3 sm:py-5 bg-green-500 text-white text-2xl sm:text-3xl font-bold rounded-2xl hover:bg-green-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center gap-2 sm:gap-3 mt-4 sm:mt-8 shrink-0 ${getFocusStyle(0)}`}
+                  >
+                    <CheckIcon size={32} /> 我感覺好多了！
                   </button>
                 </div>
               )}
 
+              {/* 畫面四：完成鼓勵 (wellDone) */}
               {currentStep === 'wellDone' && (
-                <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl p-12 text-center border-4 border-green-300">
-                  <div className="text-red-500 flex justify-center mb-6 animate-pulse">
-                    <HeartIcon size={100} fill="currentColor" />
+                <div className="max-w-2xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-8 sm:p-12 text-center border-4 border-green-300 flex flex-col items-center justify-center">
+                  <div className="text-red-500 flex justify-center mb-4 sm:mb-6 animate-pulse">
+                    <HeartIcon size={80} fill="currentColor" />
                   </div>
-                  <h1 className="text-5xl font-bold text-green-700 mb-6">太棒了！</h1>
-                  <p className="text-3xl text-gray-700 mb-12">
+                  <h1 className="text-4xl sm:text-5xl font-bold text-green-700 mb-4 sm:mb-6">太棒了！</h1>
+                  <p className="text-xl sm:text-3xl text-gray-700 mb-8 sm:mb-12">
                     你很棒，能察<Fix char="覺" z="ㄐㄩㄝˊ"/>自己的情緒，並且把自己照顧得很好！
                   </p>
                   
-                  <button id="item-0" onClick={resetApp} className={`px-8 py-4 bg-blue-500 text-white text-2xl font-bold rounded-2xl hover:bg-blue-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center mx-auto gap-3 focus:outline-none ${getFocusStyle(0)}`}>
-                    <RefreshIcon size={32} /> 回到首頁
+                  <button 
+                    id="item-0"
+                    onClick={resetApp}
+                    className={`px-6 py-3 sm:px-8 sm:py-4 bg-blue-500 text-white text-xl sm:text-2xl font-bold rounded-2xl hover:bg-blue-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center mx-auto gap-2 sm:gap-3 ${getFocusStyle(0)}`}
+                  >
+                    <RefreshIcon size={28} /> 回到首頁
                   </button>
                 </div>
               )}
