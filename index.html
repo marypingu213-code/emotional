@@ -75,6 +75,7 @@
           const [selectedVoiceURI, setSelectedVoiceURI] = useState('');
           const [font, setFont] = useState('sans');
           const [isTransitioning, setIsTransitioning] = useState(false);
+          const [qrCodeUrl, setQrCodeUrl] = useState(''); // 動態 QR Code 網址
 
           // 🎮 遊戲手把與鍵盤狀態 (無縫切換)
           const [gamepadConnected, setGamepadConnected] = useState(false);
@@ -90,6 +91,16 @@
           useEffect(() => {
             setFocusIndex(0);
           }, [currentStep]);
+
+          // 產生動態 QR Code (自動抓取目前網址)
+          useEffect(() => {
+            if (typeof window !== 'undefined') {
+              const currentHref = window.location.href;
+              // 確保即使在本機端測試也不會產生無效 QR code
+              const targetUrl = currentHref.startsWith('http') ? currentHref : 'https://github.com';
+              setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(targetUrl)}`);
+            }
+          }, []);
 
           // ⌨️ 全域鍵盤監聽模組
           useEffect(() => {
@@ -282,13 +293,13 @@
           const strategies = {
             yellow: [
               { id: 'water', icon: '🥤', label: <React.Fragment>喝口水</React.Fragment>, speech: '喝口水', toolType: 'timer', time: 10 },
-              { id: 'breathe', icon: '🌬️', label: <React.Fragment>深呼吸</React.Fragment>, speech: '跟著氣球深呼吸', toolType: 'breathing' },
-              { id: 'stretch', icon: '🤸', label: <React.Fragment>伸展身體</React.Fragment>, speech: '站起來伸展身體', toolType: 'timer', time: 15 }
+              { id: 'breathe', icon: '🌬️', label: <React.Fragment>深呼吸</React.Fragment>, speech: '深呼吸', toolType: 'breathing' },
+              { id: 'stretch', icon: '🤸', label: <React.Fragment>伸展身體</React.Fragment>, speech: '伸展身體', toolType: 'timer', time: 15 }
             ],
             red: [
-              { id: 'quiet', icon: '🪑', label: <React.Fragment>去冷靜區</React.Fragment>, speech: '去冷靜區休息', toolType: 'timer', time: 20 },
-              { id: 'headphones', icon: '🎧', label: <React.Fragment>聽音<Fix char="樂" z="ㄩㄝˋ"/></React.Fragment>, speech: '戴上耳機聽音樂', toolType: 'music', time: 20 },
-              { id: 'toy', icon: '🧸', label: <React.Fragment>按舒壓泡泡</React.Fragment>, speech: '來按舒壓泡泡吧', toolType: 'popit' }
+              { id: 'quiet', icon: '🪑', label: <React.Fragment>去冷靜區</React.Fragment>, speech: '去冷靜區', toolType: 'timer', time: 20 },
+              { id: 'headphones', icon: '🎧', label: <React.Fragment>聽音<Fix char="樂" z="ㄩㄝˋ"/></React.Fragment>, speech: '聽音樂', toolType: 'music', time: 20 },
+              { id: 'toy', icon: '🧸', label: <React.Fragment>按舒壓泡泡</React.Fragment>, speech: '按舒壓泡泡', toolType: 'popit' }
             ]
           };
 
@@ -516,17 +527,17 @@
             );
           };
 
-          // 🏆 修正音樂模組：改用本地端相對路徑，讀取 GitHub 資料夾內的音樂檔
+          // 🏆 修正音樂模組：更新自訂音樂名稱
           const MusicTool = ({ seconds }) => {
             const [audioSrc, setAudioSrc] = useState(null);
             const [musicName, setMusicName] = useState('專屬冷靜音樂');
             const fileInputRef = useRef(null);
 
-            // 更新：這裡改成讀取同一資料夾底下的 mp3 檔案
+            // 更新：改為符合使用者需求的名稱
             const builtInMusic = [
-              { id: 1, name: '🌲 森林流水', url: './music1.mp3' },
-              { id: 2, name: '🌊 溫柔海浪', url: './music2.mp3' },
-              { id: 3, name: '🌧️ 寧靜雨聲', url: './music3.mp3' }
+              { id: 1, name: '🌲 放輕鬆', url: './music1.mp3' },
+              { id: 2, name: '🌊 溫暖', url: './music2.mp3' },
+              { id: 3, name: '☀️ 積極正向', url: './music3.mp3' }
             ];
 
             const handleFileChange = (e) => {
@@ -624,9 +635,9 @@
               {/* 畫面一：情緒大廳 (checkIn) */}
               {currentStep === 'checkIn' && (
                 <React.Fragment>
-                  {/* 🏆 大廳專屬 QR Code (直接替換您的網址) */}
+                  {/* 🏆 自動抓取網址產生動態 QR Code */}
                   <div className="absolute top-4 left-4 z-40 hidden sm:flex flex-col items-center bg-white/90 p-2 rounded-xl shadow border-2 border-blue-200">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://您的帳號.github.io/專案名稱/" alt="QR Code" className="w-16 h-16 lg:w-20 lg:h-20" />
+                    {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code" className="w-16 h-16 lg:w-20 lg:h-20" />}
                     <span className="text-[10px] lg:text-xs text-blue-800 font-bold mt-1 tracking-wider">平板掃碼開啟</span>
                   </div>
 
@@ -706,9 +717,10 @@
               {/* 畫面三：執行冷靜 (coolDown) */}
               {currentStep === 'coolDown' && (
                 <div className="max-w-2xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center border-4 border-indigo-300 flex flex-col">
+                  {/* 🏆 移除「正在執行」，只顯示並朗讀策略名稱 */}
                   <h2 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-6 flex justify-center items-center gap-2 sm:gap-3 shrink-0">
-                    正在執行：{selectedStrategy.label}
-                    <button onClick={() => speak(`正在執行${selectedStrategy.speech}`)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none">
+                    {selectedStrategy.label}
+                    <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none">
                        <VolumeIcon size={28} />
                     </button>
                   </h2>
