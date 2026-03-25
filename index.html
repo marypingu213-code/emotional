@@ -65,6 +65,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="6" y1="12" x2="6.01" y2="12"></line><line x1="10" y1="12" x2="10.01" y2="12"></line><line x1="14" y1="12" x2="14.01" y2="12"></line><line x1="18" y1="12" x2="18.01" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
         );
 
+        // --- 全域共用的 AudioContext (修正平板泡泡聲音問題) ---
+        let globalAudioCtx = null;
+
         // --- 主程式開始 ---
         const App = () => {
           const [currentStep, setCurrentStep] = useState('checkIn');
@@ -92,11 +95,10 @@
             setFocusIndex(0);
           }, [currentStep]);
 
-          // 產生動態 QR Code (自動抓取目前網址)
+          // 產生動態 QR Code
           useEffect(() => {
             if (typeof window !== 'undefined') {
               const currentHref = window.location.href;
-              // 確保即使在本機端測試也不會產生無效 QR code
               const targetUrl = currentHref.startsWith('http') ? currentHref : 'https://github.com';
               setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(targetUrl)}`);
             }
@@ -115,12 +117,11 @@
                 setKeyboardActive(true);
                 setFocusIndex(prev => Math.min(maxIndex, prev + 1));
               } else if (e.key === 'Enter' || e.key === ' ') {
-                if (e.key === ' ') e.preventDefault(); // 防止空白鍵讓網頁往下捲
+                if (e.key === ' ') e.preventDefault();
                 setKeyboardActive(true);
                 const targetButton = document.getElementById(`item-${state.focusIndex}`);
                 if (targetButton) targetButton.click();
               } else {
-                // 如果按下其他按鍵，且在冷靜區，則作為戳泡泡的觸發器
                 if (state.currentStep === 'coolDown') {
                    setKeyboardActive(true);
                    setPopTrigger(t => t + 1);
@@ -128,7 +129,6 @@
               }
             };
 
-            // 當觸碰螢幕或點擊滑鼠時，自動隱藏鍵盤光圈
             const disableKeyboardFocus = () => setKeyboardActive(false);
 
             window.addEventListener('keydown', handleKeyDown);
@@ -155,7 +155,7 @@
               if (gp) {
                 if (!gamepadConnected) {
                   setGamepadConnected(true);
-                  setKeyboardActive(false); // 手把連上時優先顯示手把狀態
+                  setKeyboardActive(false); 
                 }
 
                 const pressed = gp.buttons.map(b => b.pressed);
@@ -170,7 +170,6 @@
                 if (left && !prevLeft) setFocusIndex(prev => Math.max(0, prev - 1));
                 if (right && !prevRight) setFocusIndex(prev => Math.min(maxIndex, prev + 1));
 
-                // 只將手把的按鈕 A (索引0) 作為「確認鍵」
                 const select = pressed[0];
                 const prevSelect = prevBtns[0];
 
@@ -179,7 +178,6 @@
                    if (targetButton) targetButton.click();
                 }
 
-                // 按下手把的「其他按鍵」(非確認鍵) 會觸發戳破泡泡
                 const anyOtherPress = pressed.some((p, i) => p && i !== 0 && !prevBtns[i]);
                 if (anyOtherPress && state.currentStep === 'coolDown') {
                    setPopTrigger(t => t + 1);
@@ -221,15 +219,35 @@
             );
           };
 
+          // 🏆 修正平板語音：強制過濾並優先使用 Google 國語 (台灣)
           useEffect(() => {
             const loadVoices = () => {
               const availableVoices = window.speechSynthesis.getVoices();
-              const chineseVoices = availableVoices.filter(v => v.lang.includes('zh'));
-              setVoices(chineseVoices);
               
-              if (chineseVoices.length > 0 && !selectedVoiceURI) {
-                const defaultVoice = chineseVoices.find(v => v.name.includes('Google') || v.name.includes('Mei-Jia')) || chineseVoices[0];
-                setSelectedVoiceURI(defaultVoice.voiceURI);
+              // 尋找 Google 國語
+              const googleVoice = availableVoices.find(v => v.name.includes('Google 國語') || v.name.includes('Google Mandarin'));
+              
+              // 嚴格篩選優質的台灣腔調 (過濾掉平板上幾十個無用聲音)
+              let filteredVoices = availableVoices.filter(v => 
+                v.lang === 'zh-TW' || 
+                v.lang === 'zh_TW' || 
+                v.name.includes('Google 國語') || 
+                v.name.includes('Mei-Jia') || 
+                v.name.includes('Hanhan')
+              );
+
+              // 如果有 Google 國語，強制把它排在第一位
+              if (googleVoice) {
+                 filteredVoices = [googleVoice, ...filteredVoices.filter(v => v !== googleVoice)];
+              }
+
+              // 最多只留前 3 個選項，保持選單乾淨
+              filteredVoices = filteredVoices.slice(0, 3);
+              setVoices(filteredVoices);
+              
+              // 強制預設第一順位 (Google 國語，若無則為蘋果的 Mei-Jia)
+              if (filteredVoices.length > 0 && !selectedVoiceURI) {
+                setSelectedVoiceURI(filteredVoices[0].voiceURI);
               }
             };
 
@@ -321,7 +339,6 @@
             });
           };
 
-          // 🏆 修正語音：不再說「好的，我們來」，直接俐落說出指令
           const handleStrategySelect = (strategy) => {
             if (isTransitioning) return;
             setIsTransitioning(true);
@@ -415,23 +432,31 @@
             </div>
           );
 
+          // 🏆 修正平板音效：改用單一共用的 AudioContext 解決自動播放阻擋問題
           const PopItTool = ({ trigger }) => {
             const [bubbles, setBubbles] = useState(Array(12).fill(false));
             
             const playPopSound = (isPop) => {
               try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gainNode = ctx.createGain();
+                if (!globalAudioCtx) {
+                  globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // 在平板上觸發時，確保被阻擋的引擎恢復運作
+                if (globalAudioCtx.state === 'suspended') {
+                  globalAudioCtx.resume();
+                }
+
+                const osc = globalAudioCtx.createOscillator();
+                const gainNode = globalAudioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(isPop ? 600 : 400, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(isPop ? 300 : 200, ctx.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(isPop ? 600 : 400, globalAudioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(isPop ? 300 : 200, globalAudioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, globalAudioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.1);
                 osc.connect(gainNode);
-                gainNode.connect(ctx.destination);
+                gainNode.connect(globalAudioCtx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.1);
+                osc.stop(globalAudioCtx.currentTime + 0.1);
               } catch (e) { console.log("音效播放失敗", e); }
             };
 
@@ -527,13 +552,11 @@
             );
           };
 
-          // 🏆 修正音樂模組：更新自訂音樂名稱
           const MusicTool = ({ seconds }) => {
             const [audioSrc, setAudioSrc] = useState(null);
             const [musicName, setMusicName] = useState('專屬冷靜音樂');
             const fileInputRef = useRef(null);
 
-            // 更新：改為符合使用者需求的名稱
             const builtInMusic = [
               { id: 1, name: '🌲 放輕鬆', url: './music1.mp3' },
               { id: 2, name: '🌊 溫暖', url: './music2.mp3' },
@@ -612,7 +635,6 @@
             );
           };
 
-          // 控制藍色選取框 (支援手把與鍵盤)
           const getFocusStyle = (index) => {
             return (gamepadConnected || keyboardActive) && focusIndex === index 
               ? 'ring-4 sm:ring-8 ring-blue-500 ring-offset-2 sm:ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
