@@ -104,6 +104,41 @@
             }
           }, []);
 
+          // 🏆 手機/平板 iOS Web Audio API 解鎖器
+          // 蘋果設備規定：必須在使用者第一次點擊時，啟動一次無聲音效來解鎖引擎
+          useEffect(() => {
+            const unlockAudio = () => {
+              try {
+                if (!globalAudioCtx) {
+                  globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (globalAudioCtx.state === 'suspended') {
+                  globalAudioCtx.resume();
+                }
+                // 播放一段0.001秒的無聲聲音
+                const osc = globalAudioCtx.createOscillator();
+                const gainNode = globalAudioCtx.createGain();
+                gainNode.gain.value = 0; // 無聲
+                osc.connect(gainNode);
+                gainNode.connect(globalAudioCtx.destination);
+                osc.start(0);
+                osc.stop(globalAudioCtx.currentTime + 0.001);
+              } catch(e) {}
+              
+              // 成功後移除監聽器，避免浪費資源
+              window.removeEventListener('touchstart', unlockAudio);
+              window.removeEventListener('click', unlockAudio);
+            };
+
+            window.addEventListener('touchstart', unlockAudio, { once: true });
+            window.addEventListener('click', unlockAudio, { once: true });
+
+            return () => {
+              window.removeEventListener('touchstart', unlockAudio);
+              window.removeEventListener('click', unlockAudio);
+            };
+          }, []);
+
           // ⌨️ 全域鍵盤監聽模組
           useEffect(() => {
             const handleKeyDown = (e) => {
@@ -219,35 +254,35 @@
             );
           };
 
-          // 🏆 修正平板語音：強制過濾並優先使用 Google 國語 (台灣)
+          // 🏆 升級：AI 語音篩選排序 (相容更多平板與裝置)
           useEffect(() => {
             const loadVoices = () => {
               const availableVoices = window.speechSynthesis.getVoices();
               
-              // 尋找 Google 國語
-              const googleVoice = availableVoices.find(v => v.name.includes('Google 國語') || v.name.includes('Google Mandarin'));
-              
-              // 嚴格篩選優質的台灣腔調 (過濾掉平板上幾十個無用聲音)
-              let filteredVoices = availableVoices.filter(v => 
-                v.lang === 'zh-TW' || 
-                v.lang === 'zh_TW' || 
-                v.name.includes('Google 國語') || 
-                v.name.includes('Mei-Jia') || 
-                v.name.includes('Hanhan')
-              );
+              // 抓出所有支援中文的語音
+              let chineseVoices = availableVoices.filter(v => v.lang.includes('zh'));
 
-              // 如果有 Google 國語，強制把它排在第一位
-              if (googleVoice) {
-                 filteredVoices = [googleVoice, ...filteredVoices.filter(v => v !== googleVoice)];
-              }
+              // 智慧排序：賦予優質語音最高權重
+              chineseVoices.sort((a, b) => {
+                const getScore = (v) => {
+                  if (v.name.includes('Google 國語') || v.name.includes('Google Mandarin')) return 10;
+                  if (v.name.includes('Mei-Jia')) return 9; // 蘋果繁體預設
+                  if (v.name.includes('Hanhan')) return 8;  // Mac/蘋果預設
+                  if (v.name.includes('Xiaoxiao')) return 7; // Windows Edge 預設
+                  if (v.name.includes('Yunjian')) return 6;
+                  if (v.lang === 'zh-TW' || v.lang === 'zh_TW') return 5;
+                  return 1; // 兜底：一般的中文語音
+                };
+                return getScore(b) - getScore(a);
+              });
 
-              // 最多只留前 3 個選項，保持選單乾淨
-              filteredVoices = filteredVoices.slice(0, 3);
-              setVoices(filteredVoices);
+              // 最多只留前 5 名最好的選項，確保選單不會爆掉
+              chineseVoices = chineseVoices.slice(0, 5);
+              setVoices(chineseVoices);
               
-              // 強制預設第一順位 (Google 國語，若無則為蘋果的 Mei-Jia)
-              if (filteredVoices.length > 0 && !selectedVoiceURI) {
-                setSelectedVoiceURI(filteredVoices[0].voiceURI);
+              // 如果還沒有選定，預設選中最高分的選項
+              if (chineseVoices.length > 0 && !selectedVoiceURI) {
+                setSelectedVoiceURI(chineseVoices[0].voiceURI);
               }
             };
 
@@ -432,7 +467,6 @@
             </div>
           );
 
-          // 🏆 修正平板音效：改用單一共用的 AudioContext 解決自動播放阻擋問題
           const PopItTool = ({ trigger }) => {
             const [bubbles, setBubbles] = useState(Array(12).fill(false));
             
@@ -441,7 +475,6 @@
                 if (!globalAudioCtx) {
                   globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                // 在平板上觸發時，確保被阻擋的引擎恢復運作
                 if (globalAudioCtx.state === 'suspended') {
                   globalAudioCtx.resume();
                 }
@@ -739,7 +772,6 @@
               {/* 畫面三：執行冷靜 (coolDown) */}
               {currentStep === 'coolDown' && (
                 <div className="max-w-2xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center border-4 border-indigo-300 flex flex-col">
-                  {/* 🏆 移除「正在執行」，只顯示並朗讀策略名稱 */}
                   <h2 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-6 flex justify-center items-center gap-2 sm:gap-3 shrink-0">
                     {selectedStrategy.label}
                     <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none">
