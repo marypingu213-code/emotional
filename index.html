@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>情緒紅綠燈互動教材</title>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 React 與 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- 引入 Babel 以解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         /* 🏆 UDL 平板防護機制：完全禁用滑動、縮放與文字反白，保護學生專注力 */
@@ -105,7 +102,6 @@
           }, []);
 
           // 🏆 手機/平板 iOS Web Audio API 解鎖器
-          // 蘋果設備規定：必須在使用者第一次點擊時，啟動一次無聲音效來解鎖引擎
           useEffect(() => {
             const unlockAudio = () => {
               try {
@@ -115,17 +111,15 @@
                 if (globalAudioCtx.state === 'suspended') {
                   globalAudioCtx.resume();
                 }
-                // 播放一段0.001秒的無聲聲音
                 const osc = globalAudioCtx.createOscillator();
                 const gainNode = globalAudioCtx.createGain();
-                gainNode.gain.value = 0; // 無聲
+                gainNode.gain.value = 0; 
                 osc.connect(gainNode);
                 gainNode.connect(globalAudioCtx.destination);
                 osc.start(0);
                 osc.stop(globalAudioCtx.currentTime + 0.001);
               } catch(e) {}
               
-              // 成功後移除監聽器，避免浪費資源
               window.removeEventListener('touchstart', unlockAudio);
               window.removeEventListener('click', unlockAudio);
             };
@@ -143,7 +137,11 @@
           useEffect(() => {
             const handleKeyDown = (e) => {
               const state = appStateRef.current;
-              const maxIndex = (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 : 0;
+              
+              // 🏆 修正焦點上限：在 `coolDown` 步驟，最大索引為 4 (泡泡網格, 3個款式, 鼓勵按鈕)
+              const maxIndex = state.currentStep === 'coolDown' ? 4 
+                              : (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 
+                              : 0;
 
               if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
                 setKeyboardActive(true);
@@ -157,7 +155,8 @@
                 const targetButton = document.getElementById(`item-${state.focusIndex}`);
                 if (targetButton) targetButton.click();
               } else {
-                if (state.currentStep === 'coolDown') {
+                // 如果按下其他按鍵（A, B, C...），且在冷靜區的泡泡卡片，則作為戳泡泡的觸發器
+                if (state.currentStep === 'coolDown' && state.focusIndex === 0) {
                    setKeyboardActive(true);
                    setPopTrigger(t => t + 1);
                 }
@@ -195,7 +194,9 @@
 
                 const pressed = gp.buttons.map(b => b.pressed);
                 const state = appStateRef.current;
-                const maxIndex = (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 : 0;
+                const maxIndex = state.currentStep === 'coolDown' ? 4 
+                                : (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 
+                                : 0;
 
                 const left = pressed[14] || gp.axes[0] < -0.5;
                 const right = pressed[15] || gp.axes[0] > 0.5;
@@ -214,7 +215,7 @@
                 }
 
                 const anyOtherPress = pressed.some((p, i) => p && i !== 0 && !prevBtns[i]);
-                if (anyOtherPress && state.currentStep === 'coolDown') {
+                if (anyOtherPress && state.currentStep === 'coolDown' && state.focusIndex === 0) {
                    setPopTrigger(t => t + 1);
                 }
 
@@ -258,29 +259,24 @@
           useEffect(() => {
             const loadVoices = () => {
               const availableVoices = window.speechSynthesis.getVoices();
-              
-              // 抓出所有支援中文的語音
               let chineseVoices = availableVoices.filter(v => v.lang.includes('zh'));
 
-              // 智慧排序：賦予優質語音最高權重
               chineseVoices.sort((a, b) => {
                 const getScore = (v) => {
                   if (v.name.includes('Google 國語') || v.name.includes('Google Mandarin')) return 10;
-                  if (v.name.includes('Mei-Jia')) return 9; // 蘋果繁體預設
-                  if (v.name.includes('Hanhan')) return 8;  // Mac/蘋果預設
-                  if (v.name.includes('Xiaoxiao')) return 7; // Windows Edge 預設
+                  if (v.name.includes('Mei-Jia')) return 9; 
+                  if (v.name.includes('Hanhan')) return 8;  
+                  if (v.name.includes('Xiaoxiao')) return 7; 
                   if (v.name.includes('Yunjian')) return 6;
                   if (v.lang === 'zh-TW' || v.lang === 'zh_TW') return 5;
-                  return 1; // 兜底：一般的中文語音
+                  return 1; 
                 };
                 return getScore(b) - getScore(a);
               });
 
-              // 最多只留前 5 名最好的選項，確保選單不會爆掉
               chineseVoices = chineseVoices.slice(0, 5);
               setVoices(chineseVoices);
               
-              // 如果還沒有選定，預設選中最高分的選項
               if (chineseVoices.length > 0 && !selectedVoiceURI) {
                 setSelectedVoiceURI(chineseVoices[0].voiceURI);
               }
@@ -352,7 +348,8 @@
             red: [
               { id: 'quiet', icon: '🪑', label: <React.Fragment>去冷靜區</React.Fragment>, speech: '去冷靜區', toolType: 'timer', time: 20 },
               { id: 'headphones', icon: '🎧', label: <React.Fragment>聽音<Fix char="樂" z="ㄩㄝˋ"/></React.Fragment>, speech: '聽音樂', toolType: 'music', time: 20 },
-              { id: 'toy', icon: '🧸', label: <React.Fragment>按舒壓泡泡</React.Fragment>, speech: '按舒壓泡泡', toolType: 'popit' }
+              // 🏆 BubblePop 策略的文字更新，強調可以選擇不同款式
+              { id: 'toy', icon: '🧸', label: <React.Fragment>按舒壓泡泡 (可選不同款式)</React.Fragment>, speech: '來按舒壓泡泡吧，你還可以選擇不同款式喔！', toolType: 'popit' }
             ]
           };
 
@@ -467,9 +464,32 @@
             </div>
           );
 
+          // 控制藍色選取框 (支援手把與鍵盤)
+          const getFocusStyle = (index) => {
+            return (gamepadConnected || keyboardActive) && focusIndex === index 
+              ? 'ring-4 sm:ring-8 ring-blue-500 ring-offset-2 sm:ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
+              : '';
+          };
+
+          // 🏆 升級：舒壓泡泡工具 (PopItTool) - 增加泡泡數量、大小、款式選擇
           const PopItTool = ({ trigger }) => {
-            const [bubbles, setBubbles] = useState(Array(12).fill(false));
-            
+            // 泡泡數量從 12 個增加到 24 個 (6x4 網格)，滿足「多一點、大一點」的需求
+            const totalBubbles = 24;
+            const [bubbles, setBubbles] = useState(Array(totalBubbles).fill(false));
+            const [activeStyle, setActiveStyle] = useState('classic'); // 管理當前款式
+
+            // 🏆 定義 3 種不同的款式：經典粉, 彩虹網格, 發光藍
+            const bubblePopStyles = {
+              classic: { name: 'classic', label: '🩷 經典粉', gridBg: 'bg-pink-50 border-pink-200', bubble: 'bg-pink-200 hover:bg-pink-300 active:bg-pink-400' },
+              rainbow: { name: 'rainbow', label: '🌈 彩虹格子', gridBg: 'bg-sky-50 border-sky-200', bubble: 'rainbow-bubbles' },
+              glow: { name: 'glow', label: '✨ 發光藍', gridBg: 'bg-indigo-50 border-indigo-200', bubble: 'glow-bubbles' }
+            };
+
+            const activeStyleConfig = bubblePopStyles[activeStyle];
+
+            // AI 語音提示：款式選擇
+            const speakStylePrompt = () => speak('來按舒壓泡泡吧，你可以選擇不同款式喔！');
+
             const playPopSound = (isPop) => {
               try {
                 if (!globalAudioCtx) {
@@ -502,6 +522,13 @@
               });
             };
 
+            // 🏆 修正語音同步：款式撥完音效後，學生可以選擇
+            useEffect(() => {
+              if (currentStep === 'coolDown' && selectedStrategy.id === 'toy') {
+                speakStylePrompt();
+              }
+            }, [currentStep, selectedStrategy]);
+
             useEffect(() => {
               if (trigger > 0) {
                 setBubbles(prev => {
@@ -510,7 +537,7 @@
                   
                   if (unpopped.length === 0) {
                     playPopSound(false);
-                    return Array(12).fill(false);
+                    return Array(totalBubbles).fill(false);
                   }
                   
                   const randomTarget = unpopped[Math.floor(Math.random() * unpopped.length)];
@@ -522,16 +549,47 @@
             }, [trigger]);
 
             return (
-              <div className="grid grid-cols-4 gap-3 sm:gap-4 my-4 sm:my-8 p-4 sm:p-6 bg-pink-50 rounded-3xl border-4 border-pink-200 shadow-inner w-full max-w-sm mx-auto">
-                {bubbles.map((popped, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggle(i)}
-                    className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full transition-all duration-200 shadow-md mx-auto focus:outline-none ${
-                      popped ? 'bg-pink-400 scale-90 shadow-inner' : 'bg-pink-200 scale-100 hover:bg-pink-300'
-                    }`}
-                  />
-                ))}
+              <div className="flex flex-col items-center w-full">
+                {/* 🏆 款式選擇器區塊 */}
+                <div className="bg-white/90 p-4 rounded-3xl mb-4 shadow-md w-full max-w-sm flex flex-col items-center gap-3 border-2 border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl sm:text-3xl animate-bounce">🧸</span>
+                    <span className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wider">選擇泡泡款式</span>
+                    <button onClick={speakStylePrompt} className="text-gray-400 hover:text-gray-600 focus:outline-none">
+                       <VolumeIcon size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full mt-1">
+                     {Object.values(bubblePopStyles).map((m, idx) => (
+                       <button 
+                         id={`item-${idx + 1}`} // 🏆 鍵盤/手把焦點 1-3
+                         key={m.name} 
+                         onClick={() => { setActiveStyle(m.name); speak(`你選擇了${m.label}。`); }} 
+                         disabled={isTransitioning}
+                         className={`py-2 px-3 ${m.name === activeStyle ? 'bg-blue-100 border-blue-400 text-blue-800' : 'bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50'} border-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all focus:outline-none flex items-center justify-center gap-1.5 ${getFocusStyle(idx + 1)}`}
+                       >
+                         {m.label}
+                         {m.name === 'glow' && <span className="animate-pulse">✨</span>}
+                       </button>
+                     ))}
+                  </div>
+                </div>
+
+                {/* 🏆 舒壓泡泡網格 (PopIt Grid) */}
+                <div id="item-0" // 🏆 鍵盤/手把焦點 0
+                     className={`grid grid-cols-6 gap-3 sm:gap-4 my-4 sm:my-8 p-4 sm:p-6 rounded-3xl border-4 shadow-inner w-full max-w-sm mx-auto focus:outline-none ${activeStyleConfig.gridBg} ${getFocusStyle(0)}`}
+                >
+                  {bubbles.map((popped, i) => (
+                    <button
+                      key={i}
+                      onClick={() => toggle(i)}
+                      className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full transition-all duration-200 shadow-md mx-auto focus:outline-none ${
+                        popped ? 'bg-pink-400 scale-90 shadow-inner' : ` ${activeStyleConfig.bubble} scale-100`
+                      } ${activeStyle === 'rainbow' ? `bubble-color-${i % 6}` : ''} ${activeStyle === 'glow' ? 'glow-bubble' : ''} ${popped && activeStyle === 'glow' ? 'glow-popped' : ''}`}
+                    />
+                  ))}
+                </div>
               </div>
             );
           };
@@ -642,7 +700,7 @@
                            <button 
                              key={m.id} 
                              onClick={() => handleSelectBuiltIn(m)} 
-                             className="py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 text-xs sm:text-sm font-bold shadow-sm transition-colors"
+                             className="py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 text-xs sm:text-sm font-bold shadow-sm transition-colors focus:outline-none"
                            >
                              {m.name}
                            </button>
@@ -656,7 +714,7 @@
                       <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                       <button 
                         onClick={() => fileInputRef.current.click()}
-                        className="w-full py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 shadow-md transform hover:scale-105 transition-all text-sm font-bold flex items-center justify-center gap-2"
+                        className="w-full py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 shadow-md transform hover:scale-105 transition-all text-sm font-bold flex items-center justify-center gap-2 focus:outline-none"
                       >
                         📁 載入本機音檔
                       </button>
@@ -666,12 +724,6 @@
                 <VisualTimer seconds={seconds} />
               </div>
             );
-          };
-
-          const getFocusStyle = (index) => {
-            return (gamepadConnected || keyboardActive) && focusIndex === index 
-              ? 'ring-4 sm:ring-8 ring-blue-500 ring-offset-2 sm:ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
-              : '';
           };
 
           // --- 渲染畫面 ---
@@ -772,9 +824,10 @@
               {/* 畫面三：執行冷靜 (coolDown) */}
               {currentStep === 'coolDown' && (
                 <div className="max-w-2xl w-full h-[95%] sm:h-auto max-h-[95%] bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center border-4 border-indigo-300 flex flex-col">
-                  <h2 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-6 flex justify-center items-center gap-2 sm:gap-3 shrink-0">
+                  {/* 🏆 移除「正在執行」，只顯示並朗讀策略名稱 */}
+                  <h2 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-6 flex justify-center items-center gap-2 sm:gap-3 shrink-0 relative focus:outline-none">
                     {selectedStrategy.label}
-                    <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none">
+                    <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none relative z-20">
                        <VolumeIcon size={28} />
                     </button>
                   </h2>
@@ -786,14 +839,15 @@
                     {selectedStrategy.toolType === 'music' && <MusicTool seconds={selectedStrategy.time} />}
                   </div>
 
+                  {/* 🏆 款式卡片在 coolDown 步驟的焦點索引為 4 */}
                   <button 
-                    id="item-0"
+                    id="item-4"
                     onClick={() => {
                       if (isTransitioning) return;
                       setCurrentStep('wellDone');
                       speak('我感覺好多了！太棒了！');
                     }}
-                    className={`w-full py-3 sm:py-5 bg-green-500 text-white text-2xl sm:text-3xl font-bold rounded-2xl hover:bg-green-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center gap-2 sm:gap-3 mt-4 sm:mt-8 shrink-0 focus:outline-none ${getFocusStyle(0)}`}
+                    className={`w-full py-3 sm:py-5 bg-green-500 text-white text-2xl sm:text-3xl font-bold rounded-2xl hover:bg-green-600 shadow-lg transform hover:scale-105 transition-all flex justify-center items-center gap-2 sm:gap-3 mt-4 sm:mt-8 shrink-0 focus:outline-none ${getFocusStyle(4)}`}
                   >
                     <CheckIcon size={32} /> 我感覺好多了！
                   </button>
