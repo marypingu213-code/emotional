@@ -12,7 +12,7 @@
     <!-- 引入 Babel 以解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        /* 🏆 UDL 平板/大電視防護機制：完全禁用滑動、縮放與文字反白，保護學生專注力 */
+        /* 🏆 UDL 平板/大電視防護機制：完全禁用滑動、縮放與文字反白 */
         html, body { 
             margin: 0; 
             padding: 0; 
@@ -39,36 +39,34 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 內建圖示模組 (支援自適應大小) ---
-        const VolumeIcon = ({ className = "w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 lg:w-16 lg:h-16" }) => (
+        // --- 內建圖示模組 (尺寸回調至合理大小) ---
+        const VolumeIcon = ({ className = "w-6 h-6 md:w-8 md:h-8" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
         );
-        const RefreshIcon = ({ className = "w-6 h-6 md:w-8 md:h-8 lg:w-12 lg:h-12" }) => (
+        const RefreshIcon = ({ className = "w-6 h-6 md:w-8 md:h-8" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         );
-        const CheckIcon = ({ className = "w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16" }) => (
+        const CheckIcon = ({ className = "w-8 h-8 md:w-10 md:h-10" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         );
-        const HeartIcon = ({ fill = "none", className = "w-20 h-20 md:w-32 md:h-32 lg:w-48 lg:h-48 xl:w-64 xl:h-64" }) => (
+        const HeartIcon = ({ fill = "none", className = "w-24 h-24 md:w-40 md:h-40 lg:w-48 lg:h-48" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
         );
-        const SettingsIcon = ({ className = "w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8" }) => (
+        const SettingsIcon = ({ className = "w-4 h-4 md:w-5 md:h-5" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         );
-        const TypeIcon = ({ className = "w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8" }) => (
+        const TypeIcon = ({ className = "w-4 h-4 md:w-5 md:h-5" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
         );
-        const GamepadIcon = ({ className = "w-5 h-5 md:w-8 md:h-8 lg:w-10 lg:h-10" }) => (
+        const GamepadIcon = ({ className = "w-5 h-5 md:w-6 md:h-6" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="2"></rect></svg>
         );
-        const KeyboardIcon = ({ className = "w-5 h-5 md:w-8 md:h-8 lg:w-10 lg:h-10" }) => (
+        const KeyboardIcon = ({ className = "w-5 h-5 md:w-6 md:h-6" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="6" y1="12" x2="6.01" y2="12"></line><line x1="10" y1="12" x2="10.01" y2="12"></line><line x1="14" y1="12" x2="14.01" y2="12"></line><line x1="18" y1="12" x2="18.01" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
         );
 
-        // --- 全域共用的 AudioContext ---
         let globalAudioCtx = null;
 
-        // --- 主程式開始 ---
         const App = () => {
           const [currentStep, setCurrentStep] = useState('checkIn');
           const [selectedEmotion, setSelectedEmotion] = useState(null);
@@ -80,7 +78,6 @@
           const [isTransitioning, setIsTransitioning] = useState(false);
           const [qrCodeUrl, setQrCodeUrl] = useState(''); 
 
-          // 🎮 遊戲手把與鍵盤狀態
           const [gamepadConnected, setGamepadConnected] = useState(false);
           const [keyboardActive, setKeyboardActive] = useState(false);
           const [focusIndex, setFocusIndex] = useState(0); 
@@ -95,16 +92,14 @@
             setFocusIndex(0);
           }, [currentStep]);
 
-          // 動態 QR Code
           useEffect(() => {
             if (typeof window !== 'undefined') {
               const currentHref = window.location.href;
               const targetUrl = currentHref.startsWith('http') ? currentHref : 'https://github.com';
-              setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`);
+              setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(targetUrl)}`);
             }
           }, []);
 
-          // 🏆 手機/平板 iOS Web Audio API 解鎖器
           useEffect(() => {
             const unlockAudio = () => {
               try {
@@ -136,7 +131,6 @@
             };
           }, []);
 
-          // ⌨️ 全域鍵盤監聽模組
           useEffect(() => {
             const handleKeyDown = (e) => {
               const state = appStateRef.current;
@@ -176,7 +170,6 @@
             };
           }, []);
 
-          // 🎮 手把輪詢模組
           useEffect(() => {
             let rAF;
             let prevBtns = Array(20).fill(false);
@@ -246,7 +239,7 @@
             return (
               <span className="relative inline-flex items-center justify-center mr-[0.6em]" style={{ fontFamily: '"BiauKai", "DFKai-sb", serif' }}>
                 <span>{char}</span>
-                <span className="absolute left-full top-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-[0.35em] md:text-[0.4em] leading-tight ml-[2px] tracking-tighter">
+                <span className="absolute left-full top-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-[0.35em] leading-tight ml-[2px] tracking-tighter">
                   {z.split('').map((symbol, i) => (
                     <span key={i} className="block text-center font-normal">{symbol}</span>
                   ))}
@@ -255,7 +248,6 @@
             );
           };
 
-          // AI 語音篩選排序
           useEffect(() => {
             const loadVoices = () => {
               const availableVoices = window.speechSynthesis.getVoices();
@@ -389,9 +381,9 @@
             speak('你現在感覺怎麼樣？');
           };
 
-          // 大尺寸設定面板
+          // 🏆 設定面板 (縮小至合理尺寸)
           const SettingsPanel = () => (
-            <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50 flex flex-col gap-2 md:gap-4 items-end">
+            <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50 flex flex-col gap-2 items-end">
               {voices.length > 0 && (
                 <select
                   value={selectedVoiceURI}
@@ -407,7 +399,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="bg-white/90 px-3 py-2 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg text-sm md:text-xl font-bold text-gray-700 border-2 border-gray-200 outline-none cursor-pointer max-w-[150px] sm:max-w-[200px] md:max-w-[300px] lg:max-w-[400px] truncate"
+                  className="bg-white/90 px-3 py-2 md:px-4 md:py-2.5 rounded-xl shadow-md text-xs md:text-sm font-bold text-gray-700 border-2 border-gray-200 outline-none cursor-pointer w-[140px] md:w-[180px] truncate"
                   title="選擇發音人"
                 >
                   {voices.map(v => (
@@ -418,13 +410,13 @@
                 </select>
               )}
 
-              <div className="flex gap-2 md:gap-4">
+              <div className="flex gap-2">
                 <button
                   onClick={() => {
                     const nextFont = font === 'sans' ? 'kai' : font === 'kai' ? 'round' : font === 'round' ? 'zhuyin' : 'sans';
                     setFont(nextFont);
                   }}
-                  className="flex items-center gap-1 sm:gap-2 md:gap-3 bg-white/90 px-3 py-2 md:px-6 md:py-4 rounded-full shadow-lg text-xs sm:text-sm md:text-xl font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
+                  className="flex items-center gap-1.5 bg-white/90 px-3 py-2 md:px-4 md:py-2.5 rounded-full shadow-md text-xs md:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
                   title="切換字體"
                 >
                   <TypeIcon />
@@ -448,7 +440,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="flex items-center gap-1 sm:gap-2 md:gap-3 bg-white/90 px-3 py-2 md:px-6 md:py-4 rounded-full shadow-lg text-xs sm:text-sm md:text-xl font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
+                  className="flex items-center gap-1.5 bg-white/90 px-3 py-2 md:px-4 md:py-2.5 rounded-full shadow-md text-xs md:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
                   title="切換語音音調"
                 >
                   <SettingsIcon />
@@ -460,11 +452,11 @@
 
           const getFocusStyle = (index) => {
             return (gamepadConnected || keyboardActive) && focusIndex === index 
-              ? 'ring-4 md:ring-8 lg:ring-[12px] ring-blue-500 ring-offset-2 md:ring-offset-8 scale-[1.02] z-10 transform transition-all border-blue-500' 
+              ? 'ring-4 md:ring-8 ring-blue-500 ring-offset-2 md:ring-offset-4 scale-105 z-10 transform transition-all border-blue-500' 
               : '';
           };
 
-          // 舒壓泡泡工具 (自適應電視滿版)
+          // 🏆 舒壓泡泡工具 (尺寸適中化)
           const PopItTool = ({ trigger }) => {
             const totalBubbles = 24;
             const [bubbles, setBubbles] = useState(Array(totalBubbles).fill(false));
@@ -534,24 +526,24 @@
             }, [trigger]);
 
             return (
-              <div className="flex flex-col items-center w-full mt-4 md:mt-8 lg:mt-12">
-                <div className="bg-white/90 p-4 md:p-8 rounded-[2rem] mb-4 md:mb-8 shadow-lg border-2 border-gray-200">
-                  <div className="flex items-center justify-center gap-3 md:gap-6 mb-3 md:mb-6">
-                    <span className="text-3xl md:text-5xl lg:text-6xl animate-bounce">🧸</span>
-                    <span className="text-xl md:text-3xl lg:text-4xl font-bold text-gray-800 tracking-wider">選擇泡泡款式</span>
+              <div className="flex flex-col items-center w-full mt-4">
+                <div className="bg-white/90 p-4 md:p-6 rounded-2xl md:rounded-3xl mb-4 shadow-sm border-2 border-gray-200">
+                  <div className="flex items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <span className="text-2xl md:text-3xl animate-bounce">🧸</span>
+                    <span className="text-lg md:text-xl font-bold text-gray-800 tracking-wider">選擇泡泡款式</span>
                     <button onClick={speakStylePrompt} className="text-gray-400 hover:text-gray-600 focus:outline-none">
                        <VolumeIcon />
                     </button>
                   </div>
                   
-                  <div className="flex flex-wrap justify-center gap-2 md:gap-6">
+                  <div className="flex flex-wrap justify-center gap-2 md:gap-3">
                      {Object.values(bubblePopStyles).map((m, idx) => (
                        <button 
                          id={`item-${idx + 1}`} 
                          key={m.name} 
                          onClick={() => { setActiveStyle(m.name); speak(`你選擇了${m.label}。`); }} 
                          disabled={isTransitioning}
-                         className={`py-2 px-4 md:py-4 md:px-8 ${m.name === activeStyle ? 'bg-blue-100 border-blue-400 text-blue-800' : 'bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50'} border-4 rounded-2xl text-sm md:text-2xl lg:text-3xl font-bold shadow-md transition-all focus:outline-none flex items-center justify-center gap-2 ${getFocusStyle(idx + 1)}`}
+                         className={`py-2 px-3 md:py-2.5 md:px-5 ${m.name === activeStyle ? 'bg-blue-100 border-blue-400 text-blue-800' : 'bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50'} border-2 md:border-4 rounded-xl text-xs md:text-base font-bold shadow-sm transition-all focus:outline-none flex items-center justify-center gap-1.5 ${getFocusStyle(idx + 1)}`}
                        >
                          {m.label}
                          {m.name === 'glow' && <span className="animate-pulse">✨</span>}
@@ -561,13 +553,13 @@
                 </div>
 
                 <div id="item-0" 
-                     className={`grid grid-cols-6 gap-3 sm:gap-4 md:gap-6 lg:gap-10 p-4 sm:p-6 md:p-10 lg:p-16 rounded-[2rem] lg:rounded-[4rem] border-[6px] lg:border-[10px] shadow-inner focus:outline-none ${activeStyleConfig.gridBg} ${getFocusStyle(0)}`}
+                     className={`grid grid-cols-6 gap-2 sm:gap-3 md:gap-5 p-3 sm:p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border-4 md:border-[6px] shadow-inner focus:outline-none ${activeStyleConfig.gridBg} ${getFocusStyle(0)}`}
                 >
                   {bubbles.map((popped, i) => (
                     <button
                       key={i}
                       onClick={() => toggle(i)}
-                      className={`w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 xl:w-40 xl:h-40 rounded-full transition-all duration-200 shadow-xl mx-auto focus:outline-none ${
+                      className={`w-10 h-10 sm:w-14 sm:h-14 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full transition-all duration-200 shadow-md md:shadow-lg mx-auto focus:outline-none ${
                         popped ? 'bg-pink-400 scale-90 shadow-inner' : ` ${activeStyleConfig.bubble} scale-100`
                       } ${activeStyle === 'rainbow' ? `bubble-color-${i % 6}` : ''} ${activeStyle === 'glow' ? 'glow-bubble' : ''} ${popped && activeStyle === 'glow' ? 'glow-popped' : ''}`}
                     />
@@ -577,6 +569,7 @@
             );
           };
 
+          // 🏆 呼吸工具 (尺寸適中化)
           const BreathingTool = () => {
             const [phase, setPhase] = useState('吸氣');
             useEffect(() => {
@@ -587,18 +580,19 @@
             }, []);
 
             return (
-              <div className="flex flex-col items-center justify-center mt-10 md:mt-20">
-                <div className="relative w-48 h-48 md:w-80 md:h-80 lg:w-[30rem] lg:h-[30rem] flex items-center justify-center">
-                  <div className={`absolute w-full h-full bg-blue-300 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-[1.8]' : 'scale-75'}`}></div>
-                  <div className={`absolute w-3/4 h-3/4 bg-blue-500 rounded-full shadow-2xl flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-[1.4]' : 'scale-90'}`}>
-                     <span className="text-white text-5xl md:text-7xl lg:text-9xl font-bold tracking-widest">{phase}</span>
+              <div className="flex flex-col items-center justify-center mt-8 md:mt-16">
+                <div className="relative w-40 h-40 md:w-64 md:h-64 lg:w-80 lg:h-80 flex items-center justify-center">
+                  <div className={`absolute w-full h-full bg-blue-300 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-150 md:scale-[1.6]' : 'scale-75'}`}></div>
+                  <div className={`absolute w-3/4 h-3/4 bg-blue-500 rounded-full shadow-xl flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${phase === '吸氣' ? 'scale-125 md:scale-[1.3]' : 'scale-90'}`}>
+                     <span className="text-white text-3xl md:text-5xl lg:text-6xl font-bold tracking-widest">{phase}</span>
                   </div>
                 </div>
-                <p className="mt-24 md:mt-40 lg:mt-56 text-2xl md:text-5xl lg:text-6xl text-gray-600 font-bold animate-pulse">跟著氣球慢慢呼吸...</p>
+                <p className="mt-16 md:mt-24 lg:mt-32 text-xl md:text-3xl text-gray-600 font-bold animate-pulse">跟著氣球慢慢呼吸...</p>
               </div>
             );
           };
 
+          // 🏆 倒數工具 (尺寸適中化)
           const VisualTimer = ({ seconds }) => {
             const [timeLeft, setTimeLeft] = useState(seconds);
             useEffect(() => {
@@ -610,20 +604,21 @@
             const percentage = (timeLeft / seconds) * 100;
             
             return (
-              <div className="flex flex-col items-center mt-10 md:mt-20">
+              <div className="flex flex-col items-center mt-8 md:mt-12">
                 <div 
-                  className="relative w-48 h-48 md:w-80 md:h-80 lg:w-[30rem] lg:h-[30rem] rounded-full bg-gray-200 border-[12px] md:border-[20px] border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-xl" 
+                  className="relative w-40 h-40 md:w-64 md:h-64 lg:w-80 lg:h-80 rounded-full bg-gray-200 border-8 md:border-[16px] border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-lg" 
                   style={{ background: `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
                 >
-                  <div className="w-36 h-36 md:w-64 md:h-64 lg:w-[24rem] lg:h-[24rem] bg-white rounded-full flex items-center justify-center shadow-inner">
-                    <span className="text-6xl md:text-8xl lg:text-[10rem] font-bold text-gray-700">{timeLeft}s</span>
+                  <div className="w-28 h-28 md:w-48 md:h-48 lg:w-60 lg:h-60 bg-white rounded-full flex items-center justify-center shadow-inner">
+                    <span className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-700">{timeLeft}s</span>
                   </div>
                 </div>
-                <p className="mt-10 md:mt-16 lg:mt-20 text-xl md:text-4xl lg:text-5xl text-gray-500 font-bold">休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ"/>完畢...</p>
+                <p className="mt-8 md:mt-10 text-lg md:text-2xl text-gray-500 font-bold">休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ"/>完畢...</p>
               </div>
             );
           };
 
+          // 🏆 音樂工具 (尺寸適中化)
           const MusicTool = ({ seconds }) => {
             const [audioSrc, setAudioSrc] = useState(null);
             const [musicName, setMusicName] = useState('專屬冷靜音樂');
@@ -656,46 +651,46 @@
             }, [audioSrc]);
 
             return (
-              <div className="flex flex-col items-center w-full mt-10 md:mt-16">
-                <div className="bg-blue-50 p-6 md:p-12 lg:p-16 rounded-[2rem] md:rounded-[3rem] mb-6 shadow-xl border-4 border-blue-200 w-full max-w-4xl lg:max-w-6xl">
-                  <div className="flex items-center justify-center gap-4 md:gap-8 mb-6 md:mb-10">
-                    <span className="text-4xl md:text-6xl lg:text-8xl animate-bounce">🎵</span>
-                    <span className="text-4xl md:text-6xl lg:text-8xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎧</span>
-                    <span className="text-4xl md:text-6xl lg:text-8xl animate-bounce" style={{ animationDelay: '0.4s' }}>🧸</span>
+              <div className="flex flex-col items-center w-full mt-6 md:mt-10">
+                <div className="bg-blue-50 p-6 md:p-8 lg:p-10 rounded-3xl mb-4 shadow-md border-4 border-blue-200 w-full max-w-2xl lg:max-w-4xl">
+                  <div className="flex items-center justify-center gap-3 md:gap-5 mb-4 md:mb-6">
+                    <span className="text-3xl md:text-5xl animate-bounce">🎵</span>
+                    <span className="text-3xl md:text-5xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎧</span>
+                    <span className="text-3xl md:text-5xl animate-bounce" style={{ animationDelay: '0.4s' }}>🧸</span>
                   </div>
-                  <p className="text-blue-800 font-bold text-2xl md:text-4xl lg:text-6xl tracking-wider w-full text-center mb-6 md:mb-10 truncate">{musicName}</p>
+                  <p className="text-blue-800 font-bold text-xl md:text-3xl tracking-wider w-full text-center mb-4 md:mb-6 truncate">{musicName}</p>
                   
                   {audioSrc ? (
-                    <div className="w-full flex flex-col items-center gap-4 md:gap-8">
-                      <audio controls autoPlay loop className="w-full h-16 md:h-24 lg:h-32 rounded-full shadow-inner outline-none" src={audioSrc}>
+                    <div className="w-full flex flex-col items-center gap-3 md:gap-5">
+                      <audio controls autoPlay loop className="w-full h-12 md:h-16 rounded-full shadow-inner outline-none" src={audioSrc}>
                         您的瀏覽器不支援音樂播放
                       </audio>
-                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className="text-lg md:text-3xl lg:text-4xl text-gray-500 hover:text-blue-600 underline font-bold mt-2">
+                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className="text-sm md:text-xl text-gray-500 hover:text-blue-600 underline font-bold mt-1">
                         換一首音樂
                       </button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center w-full animate-fade-in">
-                      <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full mb-6 md:mb-10">
+                      <div className="flex flex-wrap justify-center gap-3 md:gap-5 w-full mb-4 md:mb-6">
                          {builtInMusic.map(m => (
                            <button 
                              key={m.id} 
                              onClick={() => handleSelectBuiltIn(m)} 
-                             className="py-4 px-6 md:py-6 md:px-10 bg-white border-4 border-indigo-200 text-indigo-700 rounded-2xl hover:bg-indigo-50 text-xl md:text-4xl lg:text-5xl font-bold shadow-lg transition-colors focus:outline-none"
+                             className="py-3 px-4 md:py-4 md:px-6 bg-white border-2 md:border-4 border-indigo-200 text-indigo-700 rounded-xl md:rounded-2xl hover:bg-indigo-50 text-base md:text-2xl font-bold shadow-sm transition-colors focus:outline-none"
                            >
                              {m.name}
                            </button>
                          ))}
                       </div>
                       
-                      <div className="w-full border-t-4 border-gray-300 my-6 md:my-10 relative">
-                         <span className="absolute left-1/2 -translate-x-1/2 -top-4 md:-top-7 bg-blue-50 px-4 md:px-8 text-xl md:text-4xl text-gray-400 font-bold">或</span>
+                      <div className="w-full border-t-2 md:border-t-4 border-gray-300 my-4 md:my-6 relative">
+                         <span className="absolute left-1/2 -translate-x-1/2 -top-3 md:-top-5 bg-blue-50 px-3 md:px-5 text-sm md:text-xl text-gray-400 font-bold">或</span>
                       </div>
 
                       <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                       <button 
                         onClick={() => fileInputRef.current.click()}
-                        className="w-full py-4 md:py-8 bg-indigo-500 text-white rounded-[2rem] hover:bg-indigo-600 shadow-xl transform hover:scale-[1.02] transition-all text-2xl md:text-5xl lg:text-6xl font-bold flex items-center justify-center gap-4 focus:outline-none mt-2"
+                        className="w-full py-3 md:py-5 bg-indigo-500 text-white rounded-xl md:rounded-2xl hover:bg-indigo-600 shadow-md transform hover:scale-[1.02] transition-all text-lg md:text-2xl font-bold flex items-center justify-center gap-3 focus:outline-none mt-2"
                       >
                         📁 載入本機音檔
                       </button>
@@ -707,7 +702,6 @@
             );
           };
 
-          // 🏆 根據當前步驟改變「整個大螢幕的背景顏色」
           const getBgColor = () => {
             switch(currentStep) {
               case 'checkIn': return 'bg-sky-50';
@@ -718,68 +712,70 @@
             }
           };
 
-          // --- 渲染全螢幕滿版畫面 ---
+          // --- 渲染畫面 (限制最大寬度與高度，防破版) ---
           return (
-            <div className={`w-screen h-screen flex flex-col relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()}`} style={{ fontFamily: getFontFamily() }}>
+            <div className={`w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()} p-4 md:p-8`} style={{ fontFamily: getFontFamily() }}>
               
               <SettingsPanel />
               
               {/* 控制器連接提示 */}
               {(gamepadConnected || keyboardActive) && (
-                <div className="absolute top-4 left-4 md:top-8 md:left-8 z-50 flex items-center gap-2 md:gap-4 bg-green-100 text-green-700 px-4 py-2 md:px-8 md:py-4 rounded-full shadow-lg border-4 border-green-300 font-bold text-sm md:text-2xl lg:text-3xl animate-bounce">
+                <div className="absolute top-4 left-4 md:top-6 md:left-6 z-50 flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 md:px-5 md:py-2.5 rounded-full shadow-md border-2 md:border-4 border-green-300 font-bold text-xs md:text-lg animate-bounce">
                   {gamepadConnected ? <GamepadIcon /> : <KeyboardIcon />}
                   {gamepadConnected ? "已偵測到遊戲手把" : "已啟用鍵盤操作"}
                 </div>
               )}
 
-              {/* 🏆 動態 QR Code (移至左下角避免擋住畫面) */}
-              <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 z-40 hidden sm:flex flex-col items-center bg-white/90 p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-xl border-4 border-blue-200">
-                {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code" className="w-20 h-20 md:w-32 md:h-32 lg:w-48 lg:h-48" />}
-                <span className="text-[10px] md:text-lg lg:text-2xl text-blue-800 font-bold mt-2 tracking-wider">平板掃碼開啟</span>
+              {/* 🏆 QR Code (縮小並確保不擋住畫面) */}
+              <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 z-40 hidden sm:flex flex-col items-center bg-white/90 p-2 md:p-3 rounded-xl md:rounded-2xl shadow-md border-2 border-blue-200">
+                {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code" className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28" />}
+                <span className="text-[10px] md:text-xs text-blue-800 font-bold mt-1 tracking-wider">平板掃碼開啟</span>
               </div>
 
-              {/* 畫面一：情緒大廳 (滿版置中) */}
+              {/* 🏆 所有步驟容器都加上 max-w 和 max-h 限制 */}
+
+              {/* 畫面一：情緒大廳 */}
               {currentStep === 'checkIn' && (
-                <div className="w-full h-full flex flex-col p-6 md:p-12 lg:p-24 text-center justify-center animate-fade-in">
-                  <div className="flex items-center justify-center gap-4 md:gap-8 mb-8 md:mb-16 lg:mb-24 shrink-0">
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold text-blue-800 drop-shadow-sm">你現在感<Fix char="覺" z="ㄐㄩㄝˊ"/>怎麼樣？</h1>
+                <div className="w-full h-full max-w-7xl max-h-[900px] flex flex-col p-4 md:p-8 text-center justify-center animate-fade-in bg-white/40 rounded-[2rem] md:rounded-[3rem] shadow-sm backdrop-blur-sm">
+                  <div className="flex items-center justify-center gap-3 md:gap-6 mb-6 md:mb-12 shrink-0">
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold text-blue-800 drop-shadow-sm">你現在感<Fix char="覺" z="ㄐㄩㄝˊ"/>怎麼樣？</h1>
                     <button 
                       onClick={() => speak('你現在感覺怎麼樣？')}
-                      className={`p-3 md:p-6 bg-blue-100 text-blue-600 rounded-full transition-colors focus:outline-none shadow-md ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-200 hover:scale-110'}`}
+                      className={`p-2 md:p-4 bg-blue-100 text-blue-600 rounded-full transition-colors focus:outline-none shadow-sm ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-200 hover:scale-110'}`}
                       disabled={isTransitioning}
                     >
                       <VolumeIcon />
                     </button>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row gap-6 md:gap-12 lg:gap-20 flex-1 min-h-0 w-full max-w-[100rem] mx-auto">
+                  <div className="flex flex-col sm:flex-row gap-4 md:gap-8 flex-1 min-h-0 w-full">
                     {Object.values(emotions).map((emo, idx) => (
                       <button
                         id={`item-${idx}`}
                         key={emo.id}
                         onClick={() => handleEmotionSelect(emo.id)}
                         disabled={isTransitioning}
-                        className={`flex-1 flex flex-col items-center justify-center p-6 md:p-12 lg:p-20 rounded-[2rem] md:rounded-[3rem] lg:rounded-[4rem] border-[6px] md:border-[10px] transition-all focus:outline-none shadow-xl ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:-translate-y-4'} ${emo.color} ${getFocusStyle(idx)}`}
+                        className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border-4 md:border-8 transition-all focus:outline-none shadow-md bg-white/80 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.03] hover:-translate-y-2'} ${emo.color} ${getFocusStyle(idx)}`}
                       >
-                        <span className="text-7xl sm:text-8xl md:text-[8rem] lg:text-[12rem] xl:text-[15rem] mb-4 md:mb-10 drop-shadow-md">{emo.icon}</span>
-                        <span className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl font-bold mb-3 md:mb-6">{emo.label}</span>
-                        <span className="text-lg sm:text-xl md:text-3xl lg:text-5xl opacity-80 font-medium">{emo.desc}</span>
+                        <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl mb-3 md:mb-6 drop-shadow-md">{emo.icon}</span>
+                        <span className="text-xl sm:text-2xl md:text-4xl font-bold mb-2 md:mb-4">{emo.label}</span>
+                        <span className="text-sm sm:text-base md:text-xl opacity-80 font-medium px-2">{emo.desc}</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* 畫面二：選擇策略 (滿版置中) */}
+              {/* 畫面二：選擇策略 */}
               {currentStep === 'strategy' && (
-                <div className="w-full h-full flex flex-col p-6 md:p-12 lg:p-24 text-center justify-center animate-fade-in">
-                  <div className="mb-8 md:mb-16 lg:mb-24 shrink-0 flex flex-col items-center">
-                    <span className="text-6xl sm:text-8xl md:text-[8rem] lg:text-[12rem] mb-6 md:mb-12 block drop-shadow-md">{selectedEmotion.icon}</span>
-                    <div className="flex items-center justify-center gap-4 md:gap-8">
-                      <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold text-gray-800">你現在是{selectedEmotion.name}，請選一個方法：</h2>
+                <div className="w-full h-full max-w-7xl max-h-[900px] flex flex-col p-4 md:p-8 text-center justify-center animate-fade-in bg-white/40 rounded-[2rem] md:rounded-[3rem] shadow-sm backdrop-blur-sm">
+                  <div className="mb-6 md:mb-12 shrink-0 flex flex-col items-center">
+                    <span className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl mb-4 md:mb-6 block drop-shadow-md">{selectedEmotion.icon}</span>
+                    <div className="flex items-center justify-center gap-3 md:gap-5">
+                      <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-800">你現在是{selectedEmotion.name}，請選一個方法：</h2>
                       <button 
                         onClick={() => speak('請選一個方法幫助自己')}
-                        className={`p-3 md:p-6 bg-gray-200 text-gray-600 rounded-full transition-colors focus:outline-none shadow-md ${isTransitioning ? 'opacity-50' : 'hover:bg-gray-300 hover:scale-110'}`}
+                        className={`p-2 md:p-3 bg-white/80 text-gray-600 rounded-full transition-colors focus:outline-none shadow-sm ${isTransitioning ? 'opacity-50' : 'hover:bg-gray-100 hover:scale-110'}`}
                         disabled={isTransitioning}
                       >
                         <VolumeIcon />
@@ -787,17 +783,17 @@
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-6 md:gap-12 lg:gap-20 flex-1 min-h-0 w-full max-w-[100rem] mx-auto">
+                  <div className="flex flex-col sm:flex-row gap-4 md:gap-8 flex-1 min-h-0 w-full">
                     {strategies[selectedEmotion.id].map((strat, idx) => (
                       <button
                         id={`item-${idx}`}
                         key={strat.id}
                         onClick={() => handleStrategySelect(strat)}
                         disabled={isTransitioning}
-                        className={`flex-1 flex flex-col items-center justify-center p-6 md:p-12 lg:p-20 bg-indigo-50 border-[6px] md:border-[10px] border-indigo-200 rounded-[2rem] md:rounded-[3rem] lg:rounded-[4rem] transition-all focus:outline-none shadow-xl ${isTransitioning ? 'opacity-50' : 'hover:bg-indigo-100 hover:border-indigo-400 hover:scale-105 hover:-translate-y-4'} ${getFocusStyle(idx)}`}
+                        className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-white/80 border-4 md:border-8 border-indigo-200 rounded-2xl md:rounded-[2.5rem] transition-all focus:outline-none shadow-md ${isTransitioning ? 'opacity-50' : 'hover:bg-indigo-50 hover:border-indigo-400 hover:scale-[1.03] hover:-translate-y-2'} ${getFocusStyle(idx)}`}
                       >
-                        <span className="text-6xl sm:text-7xl md:text-[7rem] lg:text-[10rem] xl:text-[12rem] mb-6 md:mb-12 drop-shadow-md">{strat.icon}</span>
-                        <span className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold text-indigo-900">{strat.label}</span>
+                        <span className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl mb-4 md:mb-8 drop-shadow-md">{strat.icon}</span>
+                        <span className="text-lg sm:text-xl md:text-3xl lg:text-4xl font-extrabold text-indigo-900">{strat.label}</span>
                       </button>
                     ))}
                   </div>
@@ -805,24 +801,24 @@
                   <button 
                     onClick={resetApp}
                     disabled={isTransitioning}
-                    className="mt-8 md:mt-16 lg:mt-24 px-8 py-4 md:px-12 md:py-6 lg:px-20 lg:py-10 bg-gray-300 text-gray-700 text-xl md:text-3xl lg:text-5xl font-bold rounded-full hover:bg-gray-400 flex items-center justify-center mx-auto gap-3 md:gap-6 shrink-0 focus:outline-none shadow-lg transition-transform hover:scale-105"
+                    className="mt-6 md:mt-10 px-6 py-3 md:px-10 md:py-5 bg-white/80 text-gray-700 text-base md:text-2xl font-bold rounded-full hover:bg-gray-100 flex items-center justify-center mx-auto gap-2 md:gap-4 shrink-0 focus:outline-none shadow-md transition-transform hover:scale-105 border-2 border-gray-200"
                   >
                     <RefreshIcon /> 重新選擇心情
                   </button>
                 </div>
               )}
 
-              {/* 畫面三：執行冷靜 (滿版置中) */}
+              {/* 畫面三：執行冷靜 */}
               {currentStep === 'coolDown' && (
-                <div className="w-full h-full flex flex-col p-6 md:p-12 lg:p-24 text-center animate-fade-in">
-                  <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-extrabold text-indigo-900 mb-4 md:mb-8 flex justify-center items-center gap-4 md:gap-8 shrink-0 relative focus:outline-none drop-shadow-sm">
+                <div className="w-full h-full max-w-6xl max-h-[900px] flex flex-col p-4 md:p-8 text-center animate-fade-in bg-white/40 rounded-[2rem] md:rounded-[3rem] shadow-sm backdrop-blur-sm">
+                  <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-indigo-900 mb-2 md:mb-4 flex justify-center items-center gap-3 md:gap-5 shrink-0 relative focus:outline-none drop-shadow-sm">
                     {selectedStrategy.label}
-                    <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none relative z-20">
+                    <button onClick={() => speak(selectedStrategy.speech)} className="text-indigo-500 hover:text-indigo-700 focus:outline-none relative z-20 bg-white/50 p-2 rounded-full">
                        <VolumeIcon />
                     </button>
                   </h2>
                   
-                  <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0">
+                  <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0 overflow-hidden py-2 md:py-4">
                     {selectedStrategy.toolType === 'popit' && <PopItTool trigger={popTrigger} />}
                     {selectedStrategy.toolType === 'breathing' && <BreathingTool />}
                     {selectedStrategy.toolType === 'timer' && <VisualTimer seconds={selectedStrategy.time} />}
@@ -836,28 +832,28 @@
                       setCurrentStep('wellDone');
                       speak('我感覺好多了！太棒了！');
                     }}
-                    className={`w-full max-w-[80rem] mx-auto py-5 md:py-10 lg:py-16 bg-green-500 text-white text-3xl md:text-5xl lg:text-7xl font-extrabold rounded-[2rem] md:rounded-[4rem] hover:bg-green-600 shadow-2xl transform hover:scale-[1.02] transition-all flex justify-center items-center gap-4 md:gap-8 mt-8 md:mt-16 shrink-0 focus:outline-none ${getFocusStyle(4)}`}
+                    className={`w-full max-w-4xl mx-auto py-4 md:py-8 bg-green-500 text-white text-xl md:text-4xl font-extrabold rounded-2xl md:rounded-[2.5rem] hover:bg-green-600 shadow-xl transform hover:scale-[1.02] transition-all flex justify-center items-center gap-3 md:gap-6 mt-4 md:mt-8 shrink-0 focus:outline-none border-4 border-green-400 ${getFocusStyle(4)}`}
                   >
                     <CheckIcon /> 我感覺好多了！
                   </button>
                 </div>
               )}
 
-              {/* 畫面四：完成鼓勵 (滿版置中) */}
+              {/* 畫面四：完成鼓勵 */}
               {currentStep === 'wellDone' && (
-                <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-20 lg:p-32 text-center animate-fade-in">
-                  <div className="text-red-500 flex justify-center mb-8 md:mb-16 lg:mb-24 animate-pulse drop-shadow-xl">
+                <div className="w-full h-full max-w-5xl max-h-[800px] flex flex-col items-center justify-center p-6 md:p-16 text-center animate-fade-in bg-white/40 rounded-[2rem] md:rounded-[3rem] shadow-sm backdrop-blur-sm">
+                  <div className="text-red-500 flex justify-center mb-6 md:mb-10 animate-pulse drop-shadow-xl">
                     <HeartIcon fill="currentColor" />
                   </div>
-                  <h1 className="text-6xl sm:text-7xl md:text-[6rem] lg:text-[10rem] xl:text-[12rem] font-extrabold text-green-700 mb-6 md:mb-12 drop-shadow-sm">太棒了！</h1>
-                  <p className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl font-bold text-green-900 mb-16 md:mb-32 max-w-[80rem]">
+                  <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-extrabold text-green-700 mb-4 md:mb-8 drop-shadow-sm">太棒了！</h1>
+                  <p className="text-xl sm:text-2xl md:text-4xl font-bold text-green-900 mb-10 md:mb-20 px-4">
                     你很棒，能察<Fix char="覺" z="ㄐㄩㄝˊ"/>自己的情緒，並且把自己照顧得很好！
                   </p>
                   
                   <button 
                     id="item-0"
                     onClick={resetApp}
-                    className={`px-10 py-5 md:px-20 md:py-10 lg:px-32 lg:py-16 bg-blue-500 text-white text-2xl md:text-5xl lg:text-7xl font-extrabold rounded-[2rem] md:rounded-[4rem] hover:bg-blue-600 shadow-2xl transform hover:scale-[1.05] transition-all flex justify-center items-center mx-auto gap-4 md:gap-8 focus:outline-none ${getFocusStyle(0)}`}
+                    className={`px-8 py-4 md:px-16 md:py-8 bg-blue-500 text-white text-xl md:text-4xl font-extrabold rounded-2xl md:rounded-[2.5rem] hover:bg-blue-600 shadow-xl transform hover:scale-[1.05] transition-all flex justify-center items-center mx-auto gap-3 md:gap-6 focus:outline-none border-4 border-blue-400 ${getFocusStyle(0)}`}
                   >
                     <RefreshIcon /> 回到首頁
                   </button>
