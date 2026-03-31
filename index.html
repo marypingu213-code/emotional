@@ -101,7 +101,17 @@
 
         let globalAudioCtx = null;
 
-        // 🏆 將所有元件抽離主程式外，確保重新渲染時不會被洗掉狀態
+        // 🏆 全局字體設定函式 (解決 ReferenceError)
+        const getFontFamilyStyle = (font) => {
+            switch(font) {
+              case 'kai': return '"BiauKai", "DFKai-sb", serif';
+              case 'round': return '"cwTeXYen", "Arial Rounded MT Bold", "Varela Round", sans-serif';
+              case 'zhuyin': return '"文鼎標楷注音", "AR BiauKai Zhuyin", "BPMF Kai", "BPMF", "王漢宗中明注音體", "王漢宗中楷注音", "DFBopomofo-W5", "BiauKai", serif';
+              case 'sans':
+              default: return 'ui-sans-serif, system-ui, sans-serif';
+            }
+        };
+
         const Fix = ({ char, z, font }) => {
             if (font !== 'zhuyin') return <React.Fragment>{char}</React.Fragment>;
             return (
@@ -116,7 +126,311 @@
             );
         };
 
-        const SettingsPanel = ({ voices, selectedVoiceURI, setSelectedVoiceURI, pitch, setPitch, font, setFont }) => (
+        // 🌌 極光療癒動畫元件 (Aurora Canvas Component)
+        const AuroraCanvas = () => {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let animationFrameId;
+                let width, height;
+                let time = 0;
+                
+                let targetX = -1000;
+                let targetY = -1000;
+                let currentX = -1000;
+                let currentY = -1000;
+
+                const starCanvas = document.createElement('canvas');
+                const starCtx = starCanvas.getContext('2d');
+
+                const drawStars = () => {
+                    starCanvas.width = width;
+                    starCanvas.height = height;
+                    starCtx.fillStyle = '#020617';
+                    starCtx.fillRect(0, 0, width, height);
+                    
+                    for(let i = 0; i < 150; i++) {
+                        let x = Math.random() * width;
+                        let y = Math.random() * height;
+                        let radius = Math.random() * 1.2;
+                        let opacity = Math.random() * 0.5 + 0.1;
+                        starCtx.beginPath();
+                        starCtx.arc(x, y, radius, 0, Math.PI * 2);
+                        starCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                        starCtx.fill();
+                    }
+                };
+
+                const resize = () => {
+                    width = canvas.width = window.innerWidth;
+                    height = canvas.height = window.innerHeight;
+                    drawStars();
+                };
+                window.addEventListener('resize', resize);
+                resize();
+
+                const handlePointerMove = (e) => {
+                    targetX = e.clientX;
+                    targetY = e.clientY;
+                };
+                const handlePointerDown = (e) => {
+                    targetX = e.clientX;
+                    targetY = e.clientY;
+                };
+
+                window.addEventListener('pointermove', handlePointerMove);
+                window.addEventListener('pointerdown', handlePointerDown);
+
+                const animate = () => {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = 'rgba(2, 6, 23, 0.15)'; 
+                    ctx.fillRect(0, 0, width, height);
+
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = 0.05;
+                    ctx.drawImage(starCanvas, 0, 0);
+                    ctx.globalAlpha = 1.0;
+
+                    currentX += (targetX - currentX) * 0.02;
+                    currentY += (targetY - currentY) * 0.02;
+
+                    ctx.globalCompositeOperation = 'screen';
+
+                    const layers = 3;
+                    for (let i = 0; i < layers; i++) {
+                        ctx.beginPath();
+                        
+                        let hue = 150 + i * 20 + Math.sin(time * 0.5) * 10; 
+                        ctx.shadowBlur = 60;
+                        ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                        ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.15)`; 
+                        ctx.lineWidth = 100 - i * 20; 
+
+                        let startY = height / 2;
+                        ctx.moveTo(0, startY);
+
+                        for (let x = 0; x <= width; x += 30) {
+                            let wave1 = Math.sin(x * 0.003 + time * 0.4 + i) * 80;
+                            let wave2 = Math.sin(x * 0.008 + time * 0.2 - i) * 40;
+                            let wave3 = Math.cos(x * 0.005 - time * 0.3) * 60;
+                            
+                            let distanceToMouseX = x - currentX;
+                            let influence = 0;
+                            if (currentX > 0) {
+                                let spread = 400; 
+                                influence = Math.exp(-(distanceToMouseX * distanceToMouseX) / (spread * spread)) * ((currentY - height / 2) * 0.4);
+                            }
+
+                            let y = height * 0.4 + wave1 + wave2 + wave3 + influence;
+                            y -= (x / width) * 100 * Math.sin(time * 0.1); 
+
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                    }
+
+                    time += 0.012;
+                    animationFrameId = requestAnimationFrame(animate);
+                };
+                animate();
+
+                return () => {
+                    window.removeEventListener('resize', resize);
+                    window.removeEventListener('pointermove', handlePointerMove);
+                    window.removeEventListener('pointerdown', handlePointerDown);
+                    cancelAnimationFrame(animationFrameId);
+                };
+            }, []);
+
+            return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none opacity-100" />;
+        };
+
+        // 🌊 深海療癒水母動畫元件 (Jellyfish Canvas Component)
+        const JellyfishCanvas = () => {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let animationFrameId;
+                let width, height;
+                let mouse = { x: -1000, y: -1000, isActive: false };
+
+                const resize = () => {
+                    width = canvas.width = window.innerWidth;
+                    height = canvas.height = window.innerHeight;
+                };
+                window.addEventListener('resize', resize);
+                resize();
+
+                const handlePointerMove = (e) => {
+                    mouse.x = e.clientX;
+                    mouse.y = e.clientY;
+                    mouse.isActive = true;
+                };
+                const handlePointerOut = () => { mouse.isActive = false; };
+                const handlePointerDown = (e) => {
+                    mouse.x = e.clientX;
+                    mouse.y = e.clientY;
+                    mouse.isActive = true;
+                };
+
+                window.addEventListener('pointermove', handlePointerMove);
+                window.addEventListener('pointerout', handlePointerOut);
+                window.addEventListener('pointerdown', handlePointerDown);
+
+                class Bubble {
+                    constructor() {
+                        this.reset();
+                        this.y = Math.random() * height;
+                    }
+                    reset() {
+                        this.x = Math.random() * width;
+                        this.y = height + 50;
+                        this.size = Math.random() * 3 + 1;
+                        this.speed = Math.random() * 0.5 + 0.2;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        this.wobbleSpeed = Math.random() * 0.02 + 0.01;
+                    }
+                    update() {
+                        this.y -= this.speed;
+                        this.wobble += this.wobbleSpeed;
+                        this.x += Math.sin(this.wobble) * 0.5;
+                        if (this.y < -50) this.reset();
+                    }
+                    draw() {
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                        ctx.fill();
+                    }
+                }
+
+                class Jellyfish {
+                    constructor(x, y, scale, hue) {
+                        this.x = x;
+                        this.y = y;
+                        this.targetX = x;
+                        this.targetY = y;
+                        this.scale = scale;
+                        this.hue = hue;
+                        this.time = Math.random() * 100;
+                        this.tentacles = [];
+                        for(let i=0; i<5; i++) {
+                            this.tentacles.push({
+                                length: 80 + Math.random() * 40,
+                                offset: Math.random() * Math.PI * 2
+                            });
+                        }
+                    }
+                    update() {
+                        this.time += 0.02;
+                        this.targetX += Math.sin(this.time * 0.5) * 0.5;
+                        this.targetY -= 0.3;
+                        
+                        if (this.targetY < -150) {
+                            this.targetY = height + 150;
+                            this.y = this.targetY;
+                            this.targetX = Math.random() * width;
+                            this.x = this.targetX;
+                        }
+
+                        if (mouse.isActive) {
+                            let dx = this.x - mouse.x;
+                            let dy = this.y - mouse.y;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 250) {
+                                let force = (250 - dist) / 250;
+                                this.targetX += (dx / dist) * force * 3;
+                                this.targetY += (dy / dist) * force * 3;
+                            }
+                        }
+                        this.x += (this.targetX - this.x) * 0.02;
+                        this.y += (this.targetY - this.y) * 0.02;
+                    }
+                    draw() {
+                        ctx.save();
+                        ctx.translate(this.x, this.y);
+                        ctx.scale(this.scale, this.scale);
+                        
+                        let breathe = Math.sin(this.time * 2); 
+                        let stretchY = 1 + breathe * 0.1;
+                        let stretchX = 1 - breathe * 0.05;
+                        ctx.scale(stretchX, stretchY);
+
+                        ctx.shadowBlur = 30;
+                        ctx.shadowColor = `hsla(${this.hue}, 80%, 60%, 0.6)`;
+                        ctx.fillStyle = `hsla(${this.hue}, 70%, 70%, 0.3)`;
+                        ctx.strokeStyle = `hsla(${this.hue}, 80%, 80%, 0.5)`;
+
+                        ctx.beginPath();
+                        ctx.moveTo(-40, 0);
+                        ctx.bezierCurveTo(-40, -50, 40, -50, 40, 0);
+                        ctx.quadraticCurveTo(20, 10, 0, 0);
+                        ctx.quadraticCurveTo(-20, 10, -40, 0);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.arc(0, -15, 12, 0, Math.PI*2);
+                        ctx.fillStyle = `hsla(${this.hue}, 90%, 80%, 0.5)`;
+                        ctx.fill();
+
+                        ctx.lineWidth = 2;
+                        for(let i=0; i<this.tentacles.length; i++) {
+                            let t = this.tentacles[i];
+                            let startX = -30 + i * 15; 
+                            ctx.beginPath();
+                            ctx.moveTo(startX, 0);
+                            let wave = Math.sin(this.time * 3 + t.offset) * 15;
+                            ctx.bezierCurveTo(
+                                startX + wave, t.length / 3, 
+                                startX - wave, t.length / 3 * 2, 
+                                startX + wave * 0.5, t.length
+                            );
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                const bubbles = [];
+                for(let i=0; i<50; i++) bubbles.push(new Bubble());
+
+                const jellyfishes = [];
+                for(let i=0; i<4; i++) {
+                    let x = Math.random() * width;
+                    let y = Math.random() * height;
+                    let scale = Math.random() * 0.5 + 0.6;
+                    let hue = 180 + Math.random() * 60; 
+                    jellyfishes.push(new Jellyfish(x, y, scale, hue));
+                }
+
+                const animate = () => {
+                    ctx.clearRect(0, 0, width, height);
+                    bubbles.forEach(b => { b.update(); b.draw(); });
+                    ctx.globalCompositeOperation = 'screen';
+                    jellyfishes.forEach(j => { j.update(); j.draw(); });
+                    ctx.globalCompositeOperation = 'source-over';
+                    animationFrameId = requestAnimationFrame(animate);
+                };
+                animate();
+
+                return () => {
+                    window.removeEventListener('resize', resize);
+                    window.removeEventListener('pointermove', handlePointerMove);
+                    window.removeEventListener('pointerout', handlePointerOut);
+                    window.removeEventListener('pointerdown', handlePointerDown);
+                    cancelAnimationFrame(animationFrameId);
+                };
+            }, []);
+
+            return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none opacity-80" />;
+        };
+
+        const SettingsPanel = ({ voices, selectedVoiceURI, setSelectedVoiceURI, pitch, setPitch, font, setFont, isDark }) => (
             <div className="absolute top-2 right-2 md:top-4 md:right-4 z-50 flex flex-col gap-2 items-end">
               {voices.length > 0 && (
                 <select
@@ -133,11 +447,11 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="bg-white/90 px-2 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md text-xs md:text-sm font-bold text-gray-700 border-2 border-gray-200 outline-none cursor-pointer w-[120px] md:w-[160px] truncate focus:outline-none"
+                  className={`${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200'} px-2 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md text-xs md:text-sm font-bold border-2 outline-none cursor-pointer w-[120px] md:w-[160px] truncate focus:outline-none transition-colors`}
                   title="選擇發音人"
                 >
                   {voices.map(v => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
+                    <option key={v.voiceURI} value={v.voiceURI} className="text-gray-800">
                       🗣️ {v.name}
                     </option>
                   ))}
@@ -150,7 +464,7 @@
                     const nextFont = font === 'sans' ? 'kai' : font === 'kai' ? 'round' : font === 'round' ? 'zhuyin' : 'sans';
                     setFont(nextFont);
                   }}
-                  className="flex items-center gap-1 bg-white/90 px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
+                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
                   title="切換字體"
                 >
                   <TypeIcon />
@@ -174,7 +488,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className="flex items-center gap-1 bg-white/90 px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold text-gray-700 hover:bg-gray-50 border-2 border-gray-200 transition-all focus:outline-none"
+                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
                   title="切換語音音調"
                 >
                   <SettingsIcon />
@@ -331,7 +645,7 @@
             );
         };
 
-        const VisualTimer = ({ seconds, font }) => {
+        const VisualTimer = ({ seconds, font, isDark, isAurora }) => {
             const [timeLeft, setTimeLeft] = useState(seconds);
             useEffect(() => {
               if (timeLeft <= 0) return;
@@ -342,21 +656,26 @@
             const percentage = (timeLeft / seconds) * 100;
             
             return (
-              <div className="flex flex-col items-center justify-center shrink-0">
+              <div className="flex flex-col items-center justify-center shrink-0 relative z-10">
+                {isAurora && (
+                    <div className="absolute -top-6 md:-top-10 text-[rgba(255,255,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] whitespace-nowrap">
+                        深呼吸，輕輕觸碰夜空
+                    </div>
+                )}
                 <div 
-                  className="relative w-32 h-32 md:w-56 md:h-56 lg:w-72 lg:h-72 max-w-[25vh] max-h-[25vh] aspect-square rounded-full bg-gray-200 border-8 md:border-[16px] border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-lg mt-4 md:mt-8" 
-                  style={{ background: `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
+                  className={`relative w-32 h-32 md:w-56 md:h-56 lg:w-72 lg:h-72 max-w-[25vh] max-h-[25vh] aspect-square rounded-full border-8 md:border-[16px] flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-lg mt-4 md:mt-8 ${isDark ? 'bg-indigo-900/30 border-indigo-900/50' : 'bg-gray-200 border-gray-100'}`}
+                  style={{ background: isDark ? `conic-gradient(#818cf8 ${percentage}%, rgba(30,27,75,0.4) ${percentage}%)` : `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
                 >
-                  <div className="w-[70%] h-[70%] bg-white rounded-full flex items-center justify-center shadow-inner">
-                    <span className="text-3xl md:text-5xl lg:text-6xl font-bold text-gray-700">{timeLeft}s</span>
+                  <div className={`w-[70%] h-[70%] rounded-full flex items-center justify-center shadow-inner ${isDark ? 'bg-[#051024]/80 backdrop-blur-sm text-indigo-100' : 'bg-white text-gray-700'}`}>
+                    <span className="text-3xl md:text-5xl lg:text-6xl font-bold">{timeLeft}s</span>
                   </div>
                 </div>
-                <p className="mt-8 md:mt-12 text-sm md:text-xl lg:text-2xl text-gray-500 font-bold shrink-0">休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ" font={font}/>完畢...</p>
+                <p className={`mt-8 md:mt-12 text-sm md:text-xl lg:text-2xl font-bold shrink-0 ${isDark ? 'text-indigo-200/80' : 'text-gray-500'}`}>休息一下，等綠色倒<Fix char="數" z="ㄕㄨˇ" font={font}/>完畢...</p>
               </div>
             );
         };
 
-        const MusicTool = ({ seconds, font }) => {
+        const MusicTool = ({ seconds, font, isDark }) => {
             const [audioSrc, setAudioSrc] = useState(null);
             const [musicName, setMusicName] = useState('專屬冷靜音樂');
             const fileInputRef = useRef(null);
@@ -388,21 +707,26 @@
             }, [audioSrc]);
 
             return (
-              <div className="flex flex-col items-center justify-center w-full">
-                <div className="bg-blue-50 p-4 md:p-6 lg:p-8 rounded-3xl shadow-md border-4 border-blue-200 w-full max-w-xl lg:max-w-3xl shrink-0 mt-2">
+              <div className="flex flex-col items-center justify-center w-full relative z-10">
+                {isDark && (
+                    <div className="absolute -top-6 md:-top-10 text-[rgba(143,211,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(143,211,255,0.6)]">
+                        輕觸畫面，與深海小精靈共舞
+                    </div>
+                )}
+                <div className={`p-4 md:p-6 lg:p-8 rounded-3xl shadow-md w-full max-w-xl lg:max-w-3xl shrink-0 mt-2 ${isDark ? 'bg-white/10 backdrop-blur-md border-2 border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.3)]' : 'bg-blue-50 border-4 border-blue-200'}`}>
                   <div className="flex items-center justify-center gap-3 md:gap-5 mb-3 md:mb-5">
-                    <span className="text-2xl md:text-4xl lg:text-5xl animate-bounce">🎵</span>
-                    <span className="text-2xl md:text-4xl lg:text-5xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎧</span>
-                    <span className="text-2xl md:text-4xl lg:text-5xl animate-bounce" style={{ animationDelay: '0.4s' }}>🧸</span>
+                    <span className={`text-2xl md:text-4xl lg:text-5xl animate-bounce ${isDark ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : ''}`}>🎵</span>
+                    <span className={`text-2xl md:text-4xl lg:text-5xl animate-bounce ${isDark ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : ''}`} style={{ animationDelay: '0.2s' }}>🎧</span>
+                    <span className={`text-2xl md:text-4xl lg:text-5xl animate-bounce ${isDark ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : ''}`} style={{ animationDelay: '0.4s' }}>🧸</span>
                   </div>
-                  <p className="text-blue-800 font-bold text-lg md:text-2xl lg:text-3xl tracking-wider w-full text-center mb-3 md:mb-5 truncate">{musicName}</p>
+                  <p className={`font-bold text-lg md:text-2xl lg:text-3xl tracking-wider w-full text-center mb-3 md:mb-5 truncate ${isDark ? 'text-blue-100' : 'text-blue-800'}`}>{musicName}</p>
                   
                   {audioSrc ? (
                     <div className="w-full flex flex-col items-center gap-2 md:gap-4">
-                      <audio controls autoPlay loop className="w-full h-10 md:h-14 rounded-full shadow-inner outline-none" src={audioSrc}>
+                      <audio controls autoPlay loop className={`w-full h-10 md:h-14 rounded-full shadow-inner outline-none ${isDark ? 'opacity-90 grayscale-[0.2]' : ''}`} src={audioSrc}>
                         您的瀏覽器不支援音樂播放
                       </audio>
-                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className="text-sm md:text-lg text-gray-500 hover:text-blue-600 underline font-bold mt-1">
+                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className={`text-sm md:text-lg underline font-bold mt-1 ${isDark ? 'text-blue-200/80 hover:text-blue-100' : 'text-gray-500 hover:text-blue-600'}`}>
                         換一首音樂
                       </button>
                     </div>
@@ -413,28 +737,28 @@
                            <button 
                              key={m.id} 
                              onClick={() => handleSelectBuiltIn(m)} 
-                             className="py-2 px-3 md:py-3 md:px-6 bg-white border-2 md:border-4 border-indigo-200 text-indigo-700 rounded-lg md:rounded-xl hover:bg-indigo-50 text-sm md:text-xl font-bold shadow-sm transition-colors focus:outline-none"
+                             className={`py-2 px-3 md:py-3 md:px-6 border-2 md:border-4 rounded-lg md:rounded-xl text-sm md:text-xl font-bold shadow-sm transition-colors focus:outline-none ${isDark ? 'bg-white/10 border-white/20 text-blue-100 hover:bg-white/20' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
                            >
                              {m.name}
                            </button>
                          ))}
                       </div>
                       
-                      <div className="w-full border-t-2 md:border-t-4 border-gray-300 my-2 md:my-4 relative">
-                         <span className="absolute left-1/2 -translate-x-1/2 -top-3 md:-top-4 bg-blue-50 px-2 md:px-4 text-xs md:text-sm text-gray-400 font-bold">或</span>
+                      <div className={`w-full border-t-2 md:border-t-4 my-2 md:my-4 relative ${isDark ? 'border-white/20' : 'border-gray-300'}`}>
+                         <span className={`absolute left-1/2 -translate-x-1/2 -top-3 md:-top-4 px-2 md:px-4 text-xs md:text-sm font-bold ${isDark ? 'bg-transparent text-blue-200/80' : 'bg-blue-50 text-gray-400'}`}>或</span>
                       </div>
 
                       <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                       <button 
                         onClick={() => fileInputRef.current.click()}
-                        className="w-full py-2 md:py-4 bg-indigo-500 text-white rounded-lg md:rounded-xl hover:bg-indigo-600 shadow-md transform hover:scale-[1.02] transition-all text-base md:text-2xl font-bold flex items-center justify-center gap-2 focus:outline-none mt-1"
+                        className={`w-full py-2 md:py-4 rounded-lg md:rounded-xl shadow-md transform hover:scale-[1.02] transition-all text-base md:text-2xl font-bold flex items-center justify-center gap-2 focus:outline-none mt-1 ${isDark ? 'bg-indigo-500/80 text-white border border-indigo-400 hover:bg-indigo-500' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}
                       >
                         📁 載入本機音檔
                       </button>
                     </div>
                   )}
                 </div>
-                <VisualTimer seconds={seconds} font={font} />
+                <VisualTimer seconds={seconds} font={font} isDark={isDark} />
               </div>
             );
         };
@@ -455,6 +779,11 @@
           const [focusIndex, setFocusIndex] = useState(0); 
           const [popTrigger, setPopTrigger] = useState(0); 
           
+          // 🏆 判斷是否為特殊場景模式
+          const isDeepSeaMode = currentStep === 'coolDown' && selectedStrategy?.id === 'headphones';
+          const isAuroraMode = currentStep === 'coolDown' && selectedStrategy?.id === 'water';
+          const isDarkTheme = isDeepSeaMode || isAuroraMode;
+
           const appStateRef = useRef({ currentStep, focusIndex, selectedStrategy });
           useEffect(() => {
             appStateRef.current = { currentStep, focusIndex, selectedStrategy };
@@ -503,7 +832,7 @@
             };
           }, []);
 
-          // 🏆 全局無差別鍵盤觸發引擎
+          // 全局無差別鍵盤觸發引擎
           useEffect(() => {
             const handleKeyDown = (e) => {
               const state = appStateRef.current;
@@ -738,11 +1067,13 @@
 
           const getFocusStyle = (index) => {
             return (gamepadConnected || keyboardActive) && focusIndex === index 
-              ? 'ring-4 md:ring-8 ring-blue-500 ring-offset-2 md:ring-offset-4 scale-[1.02] z-10 transform transition-all border-blue-500' 
+              ? `ring-4 md:ring-8 ring-blue-500 ring-offset-2 md:ring-offset-4 scale-[1.02] z-10 transform transition-all ${isDarkTheme ? 'border-white/50' : 'border-blue-500'}` 
               : '';
           };
 
           const getBgColor = () => {
+            if (isAuroraMode) return 'bg-[#020617] text-white';
+            if (isDeepSeaMode) return 'bg-gradient-to-b from-[#071a33] to-[#010612] text-white';
             switch(currentStep) {
               case 'checkIn': return 'bg-sky-50';
               case 'strategy': return 'bg-blue-50';
@@ -752,19 +1083,15 @@
             }
           };
 
-          const getFontFamily = () => {
-            switch(font) {
-              case 'kai': return '"BiauKai", "DFKai-sb", serif';
-              case 'round': return '"cwTeXYen", "Arial Rounded MT Bold", "Varela Round", sans-serif';
-              case 'zhuyin': return '"文鼎標楷注音", "AR BiauKai Zhuyin", "BPMF Kai", "BPMF", "王漢宗中明注音體", "王漢宗中楷注音", "DFBopomofo-W5", "BiauKai", serif';
-              case 'sans':
-              default: return 'ui-sans-serif, system-ui, sans-serif';
-            }
-          };
-
           // --- 渲染畫面 ---
           return (
-            <div className={`w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()} p-2 md:p-6 lg:p-8`} style={{ fontFamily: getFontFamily() }}>
+            <div className={`w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()} p-2 md:p-6 lg:p-8`} style={{ fontFamily: getFontFamilyStyle(font) }}>
+              
+              {/* 🌊 水母模式畫布 */}
+              {isDeepSeaMode && <JellyfishCanvas />}
+
+              {/* 🌌 極光模式畫布 */}
+              {isAuroraMode && <AuroraCanvas />}
               
               <SettingsPanel 
                 voices={voices} 
@@ -774,11 +1101,12 @@
                 setPitch={setPitch} 
                 font={font} 
                 setFont={setFont} 
+                isDark={isDarkTheme}
               />
               
               {/* 控制器連接提示 */}
               {(gamepadConnected || keyboardActive) && (
-                <div className="absolute top-2 left-2 md:top-4 md:left-4 z-50 flex items-center gap-1.5 bg-green-100 text-green-700 px-2 py-1 md:px-4 md:py-2 rounded-full shadow-md border-2 border-green-300 font-bold text-[10px] md:text-sm lg:text-base animate-bounce">
+                <div className={`absolute top-2 left-2 md:top-4 md:left-4 z-50 flex items-center gap-1.5 px-2 py-1 md:px-4 md:py-2 rounded-full shadow-md border-2 font-bold text-[10px] md:text-sm lg:text-base animate-bounce ${isDarkTheme ? 'bg-emerald-900/50 text-emerald-200 border-emerald-400/50 backdrop-blur-md' : 'bg-green-100 text-green-700 border-green-300'}`}>
                   {gamepadConnected ? <GamepadIcon /> : <KeyboardIcon />}
                   {gamepadConnected ? "已偵測到手把" : "已啟用鍵盤"}
                 </div>
@@ -794,7 +1122,7 @@
 
               {/* 畫面一：情緒大廳 */}
               {currentStep === 'checkIn' && (
-                <div className="w-full h-full max-w-7xl flex flex-col p-4 md:p-8 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden">
+                <div className="w-full h-full max-w-7xl flex flex-col p-4 md:p-8 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden z-10 relative">
                   <div className="flex items-center justify-center gap-2 md:gap-4 mb-4 md:mb-8 shrink-0">
                     <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-800 drop-shadow-sm">你現在感<Fix char="覺" z="ㄐㄩㄝˊ" font={font}/>怎麼樣？</h1>
                     <button 
@@ -806,7 +1134,6 @@
                     </button>
                   </div>
                   
-                  {/* 🏆 完美置中捲動安全區 */}
                   <div className="flex-1 w-full min-h-0 overflow-y-auto custom-scrollbar px-2">
                     <div className="min-h-full flex flex-col items-center justify-start py-2">
                       <div className="my-auto w-full flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-6">
@@ -831,7 +1158,7 @@
 
               {/* 畫面二：選擇策略 */}
               {currentStep === 'strategy' && (
-                <div className="w-full h-full max-w-7xl flex flex-col p-4 md:p-8 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden">
+                <div className="w-full h-full max-w-7xl flex flex-col p-4 md:p-8 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden z-10 relative">
                   <div className="mb-4 md:mb-8 shrink-0 flex flex-col items-center">
                     <span className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl mb-2 md:mb-4 block drop-shadow-md">{selectedEmotion.icon}</span>
                     <div className="flex items-center justify-center gap-2 md:gap-4">
@@ -846,7 +1173,6 @@
                     </div>
                   </div>
 
-                  {/* 🏆 完美置中捲動安全區 */}
                   <div className="flex-1 w-full min-h-0 overflow-y-auto custom-scrollbar px-2">
                     <div className="min-h-full flex flex-col items-center justify-start py-2">
                       <div className="my-auto w-full flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-6">
@@ -876,23 +1202,26 @@
                 </div>
               )}
 
-              {/* 畫面三：執行冷靜 */}
+              {/* 畫面三：執行冷靜 (動態判斷特效模式) */}
               {currentStep === 'coolDown' && (
-                <div className="w-full h-full max-w-6xl flex flex-col p-4 md:p-8 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden">
+                <div className={`w-full h-full max-w-6xl flex flex-col p-4 md:p-8 text-center rounded-3xl md:rounded-[3rem] overflow-hidden z-10 relative transition-all duration-[1000ms] ${isDarkTheme ? 'bg-transparent border-none' : 'bg-white/40 shadow-sm backdrop-blur-sm'}`}>
                   
                   {/* 標題區 */}
-                  <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-indigo-900 mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm">
+                  <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-blue-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'text-indigo-900'}`}>
                     {selectedStrategy?.label}
+                    <button onClick={() => speak(selectedStrategy.speech)} className={`focus:outline-none p-1 md:p-2 rounded-full transition-colors ${isDarkTheme ? 'bg-white/10 hover:bg-white/20 text-blue-200' : 'bg-white/50 hover:text-indigo-700 text-indigo-500'}`}>
+                       <VolumeIcon />
+                    </button>
                   </h2>
                   
-                  {/* 🏆 核心防護區：置中排版並防止頂部被切 */}
+                  {/* 核心防護區 */}
                   <div className="flex-1 w-full min-h-0 overflow-y-auto custom-scrollbar px-2">
                     <div className="min-h-full flex flex-col items-center justify-start py-2">
                        <div className="my-auto w-full flex flex-col items-center justify-center">
                           {selectedStrategy?.toolType === 'popit' && <PopItTool trigger={popTrigger} onStyleChange={() => setFocusIndex(0)} speak={speak} isTransitioning={isTransitioning} getFocusStyle={getFocusStyle} />}
                           {selectedStrategy?.toolType === 'breathing' && <BreathingTool />}
-                          {selectedStrategy?.toolType === 'timer' && <VisualTimer seconds={selectedStrategy.time} font={font} />}
-                          {selectedStrategy?.toolType === 'music' && <MusicTool seconds={selectedStrategy.time} font={font} />}
+                          {selectedStrategy?.toolType === 'timer' && <VisualTimer seconds={selectedStrategy.time} font={font} isDark={isDarkTheme} isAurora={isAuroraMode} />}
+                          {selectedStrategy?.toolType === 'music' && <MusicTool seconds={selectedStrategy.time} font={font} isDark={isDarkTheme} />}
                        </div>
                     </div>
                   </div>
@@ -905,7 +1234,7 @@
                       setCurrentStep('wellDone');
                       speak('我感覺好多了！太棒了！');
                     }}
-                    className={`w-full max-w-4xl mx-auto py-3 md:py-6 bg-green-500 text-white text-lg md:text-3xl lg:text-4xl font-extrabold rounded-xl md:rounded-[2rem] hover:bg-green-600 shadow-lg transform hover:scale-[1.02] transition-all flex justify-center items-center gap-2 md:gap-4 mt-2 md:mt-4 shrink-0 z-20 relative focus:outline-none border-2 md:border-4 border-green-400 ${getFocusStyle(4)}`}
+                    className={`w-full max-w-4xl mx-auto py-3 md:py-6 text-white text-lg md:text-3xl lg:text-4xl font-extrabold rounded-xl md:rounded-[2rem] shadow-lg transform hover:scale-[1.02] transition-all flex justify-center items-center gap-2 md:gap-4 mt-2 md:mt-4 shrink-0 z-20 relative focus:outline-none border-2 md:border-4 ${getFocusStyle(4)} ${isDarkTheme ? 'bg-emerald-500/80 border-emerald-400 hover:bg-emerald-500 backdrop-blur-md' : 'bg-green-500 border-green-400 hover:bg-green-600'}`}
                   >
                     <CheckIcon /> 我感覺好多了！
                   </button>
@@ -914,7 +1243,7 @@
 
               {/* 畫面四：完成鼓勵 */}
               {currentStep === 'wellDone' && (
-                <div className="w-full h-full max-w-5xl flex flex-col items-center justify-center p-6 md:p-16 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden">
+                <div className="w-full h-full max-w-5xl flex flex-col items-center justify-center p-6 md:p-16 text-center bg-white/40 rounded-3xl md:rounded-[3rem] shadow-sm backdrop-blur-sm overflow-hidden z-10 relative">
                   <div className="text-red-500 flex justify-center mb-4 md:mb-8 animate-pulse drop-shadow-xl">
                     <HeartIcon fill="currentColor" />
                   </div>
