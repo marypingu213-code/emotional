@@ -116,6 +116,254 @@
             );
         };
 
+        // 🧘 伸展引導動畫元件 (Stretch Canvas Component)
+        const StretchCanvas = () => {
+            const canvasRef = useRef(null);
+            const instructionRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const instructionDiv = instructionRef.current;
+                let animationFrameId;
+
+                const charCanvas = document.createElement('canvas');
+                const charCtx = charCanvas.getContext('2d');
+
+                let width, height;
+                let baseX, baseY;
+
+                const resize = () => {
+                    width = canvas.width = window.innerWidth;
+                    height = canvas.height = window.innerHeight;
+                    charCanvas.width = width;
+                    charCanvas.height = height;
+                    baseX = width / 2;
+                    baseY = height * 0.6; 
+                };
+                window.addEventListener('resize', resize);
+                resize();
+
+                const poses = [
+                    { text: "雙腳站穩，放鬆雙肩...", duration: 4000, hold: 2000, angles: { tBend: 0, hBend: 0, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
+                    { text: "深吸氣... 雙手緩慢往上伸展", duration: 5000, hold: 3000, angles: { tBend: 0, hBend: -0.15, armL: -Math.PI * 0.65, elbowL: -0.1, armR: -Math.PI * 0.35, elbowR: 0.1, aura: 2.5 } },
+                    { text: "慢慢吐氣... 雙手放回身體兩側", duration: 5000, hold: 2000, angles: { tBend: 0, hBend: 0.1, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
+                    { text: "吸氣，右手往上，身體輕輕向左側彎", duration: 5000, hold: 3000, angles: { tBend: -0.2, hBend: -0.1, armL: Math.PI * 0.7, elbowL: 0.2, armR: -Math.PI * 0.65, elbowR: -0.2, aura: 2 } },
+                    { text: "吐氣... 慢慢回到正中間", duration: 4000, hold: 2000, angles: { tBend: 0, hBend: 0, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
+                    { text: "吸氣，換左手往上，身體輕輕向右側彎", duration: 5000, hold: 3000, angles: { tBend: 0.2, hBend: 0.1, armL: -Math.PI * 0.35, elbowL: 0.2, armR: Math.PI * 0.3, elbowR: -0.2, aura: 2 } },
+                    { text: "吐氣... 慢慢回到正中間", duration: 4000, hold: 2000, angles: { tBend: 0, hBend: 0, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
+                    { text: "深吸氣，雙手向外打開，輕輕擴胸", duration: 5000, hold: 3000, angles: { tBend: 0, hBend: -0.15, armL: Math.PI * 0.9, elbowL: 0.2, armR: Math.PI * 0.1, elbowR: -0.2, aura: 2.2 } },
+                    { text: "慢慢吐氣，雙手交叉抱住自己... 給自己一個擁抱", duration: 5000, hold: 4000, angles: { tBend: 0, hBend: 0.2, armL: Math.PI * 0.2, elbowL: Math.PI * 0.5, armR: Math.PI * 0.8, elbowR: -Math.PI * 0.5, aura: 1 } }
+                ];
+
+                let currentPoseIdx = 0;
+                let startTime = performance.now();
+                let currentState = { ...poses[0].angles };
+
+                function easeInOutSine(t) {
+                    return -(Math.cos(Math.PI * t) - 1) / 2;
+                }
+
+                function lerp(start, end, amt) {
+                    return (1 - amt) * start + amt * end;
+                }
+
+                const particles = [];
+                for(let i=0; i<40; i++) {
+                    particles.push({
+                        x: Math.random() * 2000,
+                        y: Math.random() * 2000,
+                        size: Math.random() * 4 + 1,
+                        speed: Math.random() * 0.3 + 0.1,
+                        opacity: Math.random() * 0.5
+                    });
+                }
+
+                function drawFigure(state) {
+                    charCtx.clearRect(0, 0, width, height);
+                    
+                    let pelvis = { x: baseX, y: baseY };
+                    let tAngle = -Math.PI / 2 + state.tBend;
+
+                    let neck = {
+                        x: pelvis.x + Math.cos(tAngle) * 140,
+                        y: pelvis.y + Math.sin(tAngle) * 140
+                    };
+
+                    let shoulderAngle = tAngle - Math.PI / 2;
+                    let lShoulder = { x: neck.x + Math.cos(shoulderAngle) * 35, y: neck.y + Math.sin(shoulderAngle) * 35 };
+                    let rShoulder = { x: neck.x - Math.cos(shoulderAngle) * 35, y: neck.y - Math.sin(shoulderAngle) * 35 };
+
+                    let lHip = { x: pelvis.x + Math.cos(shoulderAngle) * 25, y: pelvis.y + Math.sin(shoulderAngle) * 25 };
+                    let rHip = { x: pelvis.x - Math.cos(shoulderAngle) * 25, y: pelvis.y - Math.sin(shoulderAngle) * 25 };
+
+                    let hAngle = tAngle + state.hBend;
+                    let headCenter = { x: neck.x + Math.cos(hAngle) * 45, y: neck.y + Math.sin(hAngle) * 45 };
+
+                    let lElbow = { x: lShoulder.x + Math.cos(state.armL) * 80, y: lShoulder.y + Math.sin(state.armL) * 80 };
+                    let lWrist = { x: lElbow.x + Math.cos(state.armL + state.elbowL) * 75, y: lElbow.y + Math.sin(state.armL + state.elbowL) * 75 };
+
+                    let rElbow = { x: rShoulder.x + Math.cos(state.armR) * 80, y: rShoulder.y + Math.sin(state.armR) * 80 };
+                    let rWrist = { x: rElbow.x + Math.cos(state.armR + state.elbowR) * 75, y: rElbow.y + Math.sin(state.armR + state.elbowR) * 75 };
+
+                    let leg1Angle = Math.PI * 0.65 + (state.tBend * 0.1); 
+                    let lKnee = { x: lHip.x + Math.cos(leg1Angle) * 110, y: lHip.y + Math.sin(leg1Angle) * 110 };
+                    let lAnkle = { x: lKnee.x + Math.cos(leg1Angle - 0.05) * 100, y: lKnee.y + Math.sin(leg1Angle - 0.05) * 100 };
+
+                    let leg2Angle = Math.PI * 0.35 + (state.tBend * 0.1);
+                    let rKnee = { x: rHip.x + Math.cos(leg2Angle) * 110, y: rHip.y + Math.sin(leg2Angle) * 110 };
+                    let rAnkle = { x: rKnee.x + Math.cos(leg2Angle + 0.05) * 100, y: rKnee.y + Math.sin(leg2Angle + 0.05) * 100 };
+
+                    function renderSkeleton(isInner) {
+                        let tW = isInner ? 36 : 64;
+                        let lW = isInner ? 14 : 42;
+                        let hR = isInner ? 18 : 32;
+
+                        charCtx.lineCap = 'round';
+                        charCtx.lineJoin = 'round';
+
+                        charCtx.lineWidth = tW;
+                        charCtx.beginPath();
+                        charCtx.moveTo(pelvis.x, pelvis.y);
+                        charCtx.lineTo(neck.x, neck.y);
+                        charCtx.stroke();
+
+                        charCtx.lineWidth = lW;
+                        
+                        charCtx.beginPath();
+                        charCtx.moveTo(lShoulder.x, lShoulder.y);
+                        charCtx.lineTo(lElbow.x, lElbow.y);
+                        charCtx.lineTo(lWrist.x, lWrist.y);
+                        charCtx.stroke();
+
+                        charCtx.beginPath();
+                        charCtx.moveTo(rShoulder.x, rShoulder.y);
+                        charCtx.lineTo(rElbow.x, rElbow.y);
+                        charCtx.lineTo(rWrist.x, rWrist.y);
+                        charCtx.stroke();
+
+                        charCtx.beginPath();
+                        charCtx.moveTo(lHip.x, lHip.y);
+                        charCtx.lineTo(lKnee.x, lKnee.y);
+                        charCtx.lineTo(lAnkle.x, lAnkle.y);
+                        charCtx.stroke();
+
+                        charCtx.beginPath();
+                        charCtx.moveTo(rHip.x, rHip.y);
+                        charCtx.lineTo(rKnee.x, rKnee.y);
+                        charCtx.lineTo(rAnkle.x, rAnkle.y);
+                        charCtx.stroke();
+
+                        charCtx.beginPath();
+                        charCtx.arc(headCenter.x, headCenter.y, hR, 0, Math.PI * 2);
+                        charCtx.fill();
+                    }
+
+                    charCtx.globalCompositeOperation = 'source-over';
+                    charCtx.strokeStyle = 'rgba(255, 255, 255, 1)';
+                    charCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+                    renderSkeleton(false);
+
+                    charCtx.globalCompositeOperation = 'destination-out';
+                    charCtx.strokeStyle = 'rgba(0, 0, 0, 1)';
+                    charCtx.fillStyle = 'rgba(0, 0, 0, 1)';
+                    renderSkeleton(true); 
+                    
+                    charCtx.globalCompositeOperation = 'source-over';
+                }
+
+                function animate(now) {
+                    let elapsed = now - startTime;
+                    let currentPose = poses[currentPoseIdx];
+                    let nextPoseIdx = (currentPoseIdx + 1) % poses.length;
+
+                    if (instructionDiv && instructionDiv.innerText !== currentPose.text) {
+                        instructionDiv.style.opacity = 0;
+                        setTimeout(() => {
+                            if (instructionDiv) {
+                                instructionDiv.innerText = currentPose.text;
+                                instructionDiv.style.opacity = 1;
+                            }
+                        }, 700);
+                    }
+
+                    let progress = 0;
+                    if (elapsed < currentPose.duration) {
+                        progress = easeInOutSine(elapsed / currentPose.duration);
+                    } else if (elapsed < currentPose.duration + currentPose.hold) {
+                        progress = 1;
+                    } else {
+                        currentPoseIdx = nextPoseIdx;
+                        startTime = now;
+                        progress = 0;
+                    }
+
+                    let startAngles = currentPoseIdx === 0 ? poses[poses.length-1].angles : poses[currentPoseIdx - 1].angles;
+                    if(elapsed === 0) startAngles = currentPose.angles; 
+                    
+                    let targetAngles = currentPose.angles;
+                    
+                    currentState.tBend = lerp(startAngles.tBend, targetAngles.tBend, progress);
+                    currentState.hBend = lerp(startAngles.hBend, targetAngles.hBend, progress);
+                    currentState.armL = lerp(startAngles.armL, targetAngles.armL, progress);
+                    currentState.elbowL = lerp(startAngles.elbowL, targetAngles.elbowL, progress);
+                    currentState.armR = lerp(startAngles.armR, targetAngles.armR, progress);
+                    currentState.elbowR = lerp(startAngles.elbowR, targetAngles.elbowR, progress);
+                    currentState.aura = lerp(startAngles.aura, targetAngles.aura, progress);
+
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    particles.forEach(p => {
+                        p.y -= p.speed;
+                        if(p.y < -10) { p.y = height + 10; p.x = Math.random() * width; }
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                        ctx.fill();
+                    });
+
+                    let chestY = baseY - 120;
+                    let auraRadius = 80 * currentState.aura;
+                    let grad = ctx.createRadialGradient(baseX, chestY, 0, baseX, chestY, auraRadius);
+                    grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(baseX, chestY, auraRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    drawFigure(currentState);
+
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                    ctx.drawImage(charCanvas, 0, 0);
+                    ctx.shadowBlur = 0; 
+
+                    animationFrameId = requestAnimationFrame(animate);
+                }
+
+                animationFrameId = requestAnimationFrame(animate);
+
+                return () => {
+                    window.removeEventListener('resize', resize);
+                    cancelAnimationFrame(animationFrameId);
+                };
+            }, []);
+
+            return (
+                <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
+                    <div 
+                        ref={instructionRef}
+                        className="absolute top-[15%] left-1/2 -translate-x-1/2 text-white/95 text-xl md:text-3xl lg:text-4xl tracking-widest text-center transition-opacity duration-[1500ms] ease-in-out w-[90%] font-bold drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-10"
+                        style={{ textShadow: '0 0 20px rgba(255, 255, 255, 0.6)', opacity: 1 }}
+                    >
+                        準備好... 雙腳站穩，放鬆身體
+                    </div>
+                    <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full opacity-100" />
+                </div>
+            );
+        };
+
         // 🌌 極光療癒動畫元件 
         const AuroraCanvas = () => {
             const canvasRef = useRef(null);
@@ -221,7 +469,6 @@
                         ctx.stroke();
                     }
 
-                    // 稍微調高極光波動速度使其更有活力
                     time += 0.02;
                     animationFrameId = requestAnimationFrame(animate);
                 };
@@ -438,7 +685,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className={`${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200'} px-2 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md text-xs md:text-sm font-bold border-2 outline-none cursor-pointer w-[120px] md:w-[160px] truncate focus:outline-none transition-colors`}
+                  className={`${isDark ? 'bg-white/20 text-white border-white/40 backdrop-blur-md hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200'} px-2 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md text-xs md:text-sm font-bold border-2 outline-none cursor-pointer w-[120px] md:w-[160px] truncate focus:outline-none transition-colors`}
                   title="選擇發音人"
                 >
                   {voices.map(v => (
@@ -455,7 +702,7 @@
                     const nextFont = font === 'sans' ? 'kai' : font === 'kai' ? 'round' : font === 'round' ? 'zhuyin' : 'sans';
                     setFont(nextFont);
                   }}
-                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
+                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-white border-white/40 backdrop-blur-md hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
                   title="切換字體"
                 >
                   <TypeIcon />
@@ -479,7 +726,7 @@
                       window.speechSynthesis.speak(u);
                     }
                   }}
-                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-blue-100 border-white/30 backdrop-blur-sm hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
+                  className={`flex items-center gap-1 ${isDark ? 'bg-white/20 text-white border-white/40 backdrop-blur-md hover:bg-white/30' : 'bg-white/90 text-gray-700 border-gray-200 hover:bg-gray-50'} px-2 py-1.5 md:px-4 md:py-2 rounded-full shadow-md text-xs md:text-sm font-bold border-2 transition-all focus:outline-none`}
                   title="切換語音音調"
                 >
                   <SettingsIcon />
@@ -636,7 +883,7 @@
             );
         };
 
-        const VisualTimer = ({ seconds, font, isDark, isAurora }) => {
+        const VisualTimer = ({ seconds, font, isDark }) => {
             const [timeLeft, setTimeLeft] = useState(seconds);
             useEffect(() => {
               if (timeLeft <= 0) return;
@@ -648,11 +895,6 @@
             
             return (
               <div className="flex flex-col items-center justify-center shrink-0 relative z-10">
-                {isAurora && (
-                    <div className="absolute -top-6 md:-top-10 text-[rgba(255,255,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] whitespace-nowrap">
-                        深呼吸，輕輕觸碰夜空
-                    </div>
-                )}
                 <div 
                   className={`relative w-32 h-32 md:w-56 md:h-56 lg:w-72 lg:h-72 max-w-[25vh] max-h-[25vh] aspect-square rounded-full border-8 md:border-[16px] flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-lg mt-4 md:mt-8 ${isDark ? 'bg-indigo-900/30 border-indigo-900/50' : 'bg-gray-200 border-gray-100'}`}
                   style={{ background: isDark ? `conic-gradient(#818cf8 ${percentage}%, rgba(30,27,75,0.4) ${percentage}%)` : `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
@@ -710,14 +952,14 @@
                     <span className={`text-2xl md:text-4xl lg:text-5xl animate-bounce ${isDark ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : ''}`} style={{ animationDelay: '0.2s' }}>🎧</span>
                     <span className={`text-2xl md:text-4xl lg:text-5xl animate-bounce ${isDark ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : ''}`} style={{ animationDelay: '0.4s' }}>🧸</span>
                   </div>
-                  <p className={`font-bold text-lg md:text-2xl lg:text-3xl tracking-wider w-full text-center mb-3 md:mb-5 truncate ${isDark ? 'text-blue-100' : 'text-blue-800'}`}>{musicName}</p>
+                  <p className={`font-bold text-lg md:text-2xl lg:text-3xl tracking-wider w-full text-center mb-3 md:mb-5 truncate ${isDark ? 'text-white' : 'text-blue-800'}`}>{musicName}</p>
                   
                   {audioSrc ? (
                     <div className="w-full flex flex-col items-center gap-2 md:gap-4">
                       <audio controls autoPlay loop className={`w-full h-10 md:h-14 rounded-full shadow-inner outline-none ${isDark ? 'opacity-90 grayscale-[0.2]' : ''}`} src={audioSrc}>
                         您的瀏覽器不支援音樂播放
                       </audio>
-                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className={`text-sm md:text-lg underline font-bold mt-1 ${isDark ? 'text-blue-200/80 hover:text-blue-100' : 'text-gray-500 hover:text-blue-600'}`}>
+                      <button onClick={() => { setAudioSrc(null); setMusicName('專屬冷靜音樂'); }} className={`text-sm md:text-lg underline font-bold mt-1 ${isDark ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-blue-600'}`}>
                         換一首音樂
                       </button>
                     </div>
@@ -728,7 +970,7 @@
                            <button 
                              key={m.id} 
                              onClick={() => handleSelectBuiltIn(m)} 
-                             className={`py-2 px-3 md:py-3 md:px-6 border-2 md:border-4 rounded-lg md:rounded-xl text-sm md:text-xl font-bold shadow-sm transition-colors focus:outline-none ${isDark ? 'bg-white/10 border-white/20 text-blue-100 hover:bg-white/20' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
+                             className={`py-2 px-3 md:py-3 md:px-6 border-2 md:border-4 rounded-lg md:rounded-xl text-sm md:text-xl font-bold shadow-sm transition-colors focus:outline-none ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
                            >
                              {m.name}
                            </button>
@@ -736,7 +978,7 @@
                       </div>
                       
                       <div className={`w-full border-t-2 md:border-t-4 my-2 md:my-4 relative ${isDark ? 'border-white/20' : 'border-gray-300'}`}>
-                         <span className={`absolute left-1/2 -translate-x-1/2 -top-3 md:-top-4 px-2 md:px-4 text-xs md:text-sm font-bold ${isDark ? 'bg-transparent text-blue-200/80' : 'bg-blue-50 text-gray-400'}`}>或</span>
+                         <span className={`absolute left-1/2 -translate-x-1/2 -top-3 md:-top-4 px-2 md:px-4 text-xs md:text-sm font-bold ${isDark ? 'bg-transparent text-white/80' : 'bg-blue-50 text-gray-400'}`}>或</span>
                       </div>
 
                       <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
@@ -773,9 +1015,10 @@
           // 🏆 判斷是否為特殊場景模式
           const isDeepSeaMode = currentStep === 'coolDown' && selectedStrategy?.id === 'headphones';
           const isAuroraMode = currentStep === 'coolDown' && selectedStrategy?.id === 'water';
-          const isDarkTheme = isDeepSeaMode || isAuroraMode;
+          const isStretchMode = currentStep === 'coolDown' && selectedStrategy?.id === 'stretch';
+          const isDarkTheme = isDeepSeaMode || isAuroraMode || isStretchMode;
 
-          // 🏆 將負責抓取字體的函式定義在 App 內部，確保它能存取到 font 狀態 (解決 ReferenceError)
+          // 🏆 將負責抓取字體的函式定義在 App 內部，確保安全存取
           const getFontFamily = () => {
             switch(font) {
               case 'kai': return '"BiauKai", "DFKai-sb", serif';
@@ -1021,7 +1264,7 @@
             yellow: [
               { id: 'water', icon: '🥤', label: <React.Fragment>喝口水</React.Fragment>, speech: '喝口水', toolType: 'timer', time: 10 },
               { id: 'breathe', icon: '🌬️', label: <React.Fragment>深呼吸</React.Fragment>, speech: '深呼吸', toolType: 'breathing' },
-              { id: 'stretch', icon: '🤸', label: <React.Fragment>伸展身體</React.Fragment>, speech: '伸展身體', toolType: 'timer', time: 15 }
+              { id: 'stretch', icon: '🤸', label: <React.Fragment>伸展身體</React.Fragment>, speech: '跟著引導伸展身體', toolType: 'stretch', time: 15 }
             ],
             red: [
               { id: 'quiet', icon: '🪑', label: <React.Fragment>去冷靜區</React.Fragment>, speech: '去冷靜區', toolType: 'timer', time: 20 },
@@ -1074,6 +1317,7 @@
           };
 
           const getBgColor = () => {
+            if (isStretchMode) return 'bg-gradient-to-br from-[#a18cd1] to-[#fbc2eb] text-white';
             if (isAuroraMode) return 'bg-[#020617] text-white';
             if (isDeepSeaMode) return 'bg-gradient-to-b from-[#071a33] to-[#010612] text-white';
             switch(currentStep) {
@@ -1094,6 +1338,9 @@
 
               {/* 🌌 極光模式畫布 */}
               {isAuroraMode && <AuroraCanvas />}
+
+              {/* 🤸 伸展模式畫布 */}
+              {isStretchMode && <StretchCanvas />}
               
               <SettingsPanel 
                 voices={voices} 
@@ -1108,7 +1355,7 @@
               
               {/* 控制器連接提示 */}
               {(gamepadConnected || keyboardActive) && (
-                <div className={`absolute top-2 left-2 md:top-4 md:left-4 z-50 flex items-center gap-1.5 px-2 py-1 md:px-4 md:py-2 rounded-full shadow-md border-2 font-bold text-[10px] md:text-sm lg:text-base animate-bounce ${isDarkTheme ? 'bg-emerald-900/50 text-emerald-200 border-emerald-400/50 backdrop-blur-md' : 'bg-green-100 text-green-700 border-green-300'}`}>
+                <div className={`absolute top-2 left-2 md:top-4 md:left-4 z-50 flex items-center gap-1.5 px-2 py-1 md:px-4 md:py-2 rounded-full shadow-md border-2 font-bold text-[10px] md:text-sm lg:text-base animate-bounce ${isDarkTheme ? 'bg-white/20 text-white border-white/40 backdrop-blur-md' : 'bg-green-100 text-green-700 border-green-300'}`}>
                   {gamepadConnected ? <GamepadIcon /> : <KeyboardIcon />}
                   {gamepadConnected ? "已偵測到手把" : "已啟用鍵盤"}
                 </div>
@@ -1208,13 +1455,15 @@
               {currentStep === 'coolDown' && (
                 <div className={`w-full h-full max-w-6xl flex flex-col p-4 md:p-8 text-center rounded-3xl md:rounded-[3rem] overflow-hidden z-10 relative transition-all duration-[1000ms] ${isDarkTheme ? 'bg-transparent border-none' : 'bg-white/40 shadow-sm backdrop-blur-sm'}`}>
                   
-                  {/* 標題區 */}
-                  <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-blue-100 drop-shadow-[0_0_10px_rgba(143,211,255,0.5)]' : 'text-indigo-900'}`}>
-                    {selectedStrategy?.label}
-                    <button onClick={() => speak(selectedStrategy.speech)} className={`focus:outline-none p-1 md:p-2 rounded-full transition-colors ${isDarkTheme ? 'bg-white/10 hover:bg-white/20 text-blue-200' : 'bg-white/50 hover:text-indigo-700 text-indigo-500'}`}>
-                       <VolumeIcon />
-                    </button>
-                  </h2>
+                  {/* 標題區 (伸展模式時隱藏標題，由背景文字引導) */}
+                  {!isStretchMode && (
+                    <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'text-indigo-900'}`}>
+                      {selectedStrategy?.label}
+                      <button onClick={() => speak(selectedStrategy.speech)} className={`focus:outline-none p-1 md:p-2 rounded-full transition-colors ${isDarkTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white/50 hover:text-indigo-700 text-indigo-500'}`}>
+                         <VolumeIcon />
+                      </button>
+                    </h2>
+                  )}
                   
                   {/* 核心防護區 */}
                   <div className="flex-1 w-full min-h-0 overflow-y-auto custom-scrollbar px-2">
