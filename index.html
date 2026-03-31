@@ -101,17 +101,7 @@
 
         let globalAudioCtx = null;
 
-        // 🏆 全局字體設定函式 (解決 ReferenceError)
-        const getFontFamilyStyle = (font) => {
-            switch(font) {
-              case 'kai': return '"BiauKai", "DFKai-sb", serif';
-              case 'round': return '"cwTeXYen", "Arial Rounded MT Bold", "Varela Round", sans-serif';
-              case 'zhuyin': return '"文鼎標楷注音", "AR BiauKai Zhuyin", "BPMF Kai", "BPMF", "王漢宗中明注音體", "王漢宗中楷注音", "DFBopomofo-W5", "BiauKai", serif';
-              case 'sans':
-              default: return 'ui-sans-serif, system-ui, sans-serif';
-            }
-        };
-
+        // 破音字修正元件
         const Fix = ({ char, z, font }) => {
             if (font !== 'zhuyin') return <React.Fragment>{char}</React.Fragment>;
             return (
@@ -126,7 +116,7 @@
             );
         };
 
-        // 🌌 極光療癒動畫元件 (Aurora Canvas Component)
+        // 🌌 極光療癒動畫元件 
         const AuroraCanvas = () => {
             const canvasRef = useRef(null);
 
@@ -231,7 +221,8 @@
                         ctx.stroke();
                     }
 
-                    time += 0.012;
+                    // 稍微調高極光波動速度使其更有活力
+                    time += 0.02;
                     animationFrameId = requestAnimationFrame(animate);
                 };
                 animate();
@@ -247,7 +238,7 @@
             return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none opacity-100" />;
         };
 
-        // 🌊 深海療癒水母動畫元件 (Jellyfish Canvas Component)
+        // 🌊 深海療癒水母動畫元件 
         const JellyfishCanvas = () => {
             const canvasRef = useRef(null);
 
@@ -290,7 +281,7 @@
                         this.x = Math.random() * width;
                         this.y = height + 50;
                         this.size = Math.random() * 3 + 1;
-                        this.speed = Math.random() * 0.5 + 0.2;
+                        this.speed = Math.random() * 1.5 + 0.5; 
                         this.wobble = Math.random() * Math.PI * 2;
                         this.wobbleSpeed = Math.random() * 0.02 + 0.01;
                     }
@@ -326,9 +317,9 @@
                         }
                     }
                     update() {
-                        this.time += 0.02;
-                        this.targetX += Math.sin(this.time * 0.5) * 0.5;
-                        this.targetY -= 0.3;
+                        this.time += 0.04;
+                        this.targetX += Math.sin(this.time * 0.5) * 0.8;
+                        this.targetY -= 0.8; 
                         
                         if (this.targetY < -150) {
                             this.targetY = height + 150;
@@ -341,14 +332,14 @@
                             let dx = this.x - mouse.x;
                             let dy = this.y - mouse.y;
                             let dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < 250) {
-                                let force = (250 - dist) / 250;
-                                this.targetX += (dx / dist) * force * 3;
-                                this.targetY += (dy / dist) * force * 3;
+                            if (dist < 300) {
+                                let force = (300 - dist) / 300;
+                                this.targetX += (dx / dist) * force * 5;
+                                this.targetY += (dy / dist) * force * 5;
                             }
                         }
-                        this.x += (this.targetX - this.x) * 0.02;
-                        this.y += (this.targetY - this.y) * 0.02;
+                        this.x += (this.targetX - this.x) * 0.03;
+                        this.y += (this.targetY - this.y) * 0.03;
                     }
                     draw() {
                         ctx.save();
@@ -427,7 +418,7 @@
                 };
             }, []);
 
-            return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none opacity-80" />;
+            return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none opacity-100" />;
         };
 
         const SettingsPanel = ({ voices, selectedVoiceURI, setSelectedVoiceURI, pitch, setPitch, font, setFont, isDark }) => (
@@ -709,7 +700,7 @@
             return (
               <div className="flex flex-col items-center justify-center w-full relative z-10">
                 {isDark && (
-                    <div className="absolute -top-6 md:-top-10 text-[rgba(143,211,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(143,211,255,0.6)]">
+                    <div className="absolute -top-6 md:-top-10 text-[rgba(143,211,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(143,211,255,0.6)] whitespace-nowrap">
                         輕觸畫面，與深海小精靈共舞
                     </div>
                 )}
@@ -783,6 +774,17 @@
           const isDeepSeaMode = currentStep === 'coolDown' && selectedStrategy?.id === 'headphones';
           const isAuroraMode = currentStep === 'coolDown' && selectedStrategy?.id === 'water';
           const isDarkTheme = isDeepSeaMode || isAuroraMode;
+
+          // 🏆 將負責抓取字體的函式定義在 App 內部，確保它能存取到 font 狀態 (解決 ReferenceError)
+          const getFontFamily = () => {
+            switch(font) {
+              case 'kai': return '"BiauKai", "DFKai-sb", serif';
+              case 'round': return '"cwTeXYen", "Arial Rounded MT Bold", "Varela Round", sans-serif';
+              case 'zhuyin': return '"文鼎標楷注音", "AR BiauKai Zhuyin", "BPMF Kai", "BPMF", "王漢宗中明注音體", "王漢宗中楷注音", "DFBopomofo-W5", "BiauKai", serif';
+              case 'sans':
+              default: return 'ui-sans-serif, system-ui, sans-serif';
+            }
+          };
 
           const appStateRef = useRef({ currentStep, focusIndex, selectedStrategy });
           useEffect(() => {
@@ -1085,7 +1087,7 @@
 
           // --- 渲染畫面 ---
           return (
-            <div className={`w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()} p-2 md:p-6 lg:p-8`} style={{ fontFamily: getFontFamilyStyle(font) }}>
+            <div className={`w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-[1000ms] ${getBgColor()} p-2 md:p-6 lg:p-8`} style={{ fontFamily: getFontFamily() }}>
               
               {/* 🌊 水母模式畫布 */}
               {isDeepSeaMode && <JellyfishCanvas />}
@@ -1207,7 +1209,7 @@
                 <div className={`w-full h-full max-w-6xl flex flex-col p-4 md:p-8 text-center rounded-3xl md:rounded-[3rem] overflow-hidden z-10 relative transition-all duration-[1000ms] ${isDarkTheme ? 'bg-transparent border-none' : 'bg-white/40 shadow-sm backdrop-blur-sm'}`}>
                   
                   {/* 標題區 */}
-                  <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-blue-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'text-indigo-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-blue-100 drop-shadow-[0_0_10px_rgba(143,211,255,0.5)]' : 'text-indigo-900'}`}>
                     {selectedStrategy?.label}
                     <button onClick={() => speak(selectedStrategy.speech)} className={`focus:outline-none p-1 md:p-2 rounded-full transition-colors ${isDarkTheme ? 'bg-white/10 hover:bg-white/20 text-blue-200' : 'bg-white/50 hover:text-indigo-700 text-indigo-500'}`}>
                        <VolumeIcon />
