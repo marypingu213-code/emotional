@@ -116,7 +116,7 @@
             );
         };
 
-        // 🧘 伸展引導動畫元件 (Stretch Canvas Component)
+        // 🧘 伸展引導動畫元件 
         const StretchCanvas = () => {
             const canvasRef = useRef(null);
             const instructionRef = useRef(null);
@@ -144,6 +144,7 @@
                 window.addEventListener('resize', resize);
                 resize();
 
+                // 🏆 已更新第 9 個動作，改為雙手輕輕放下
                 const poses = [
                     { text: "雙腳站穩，放鬆雙肩...", duration: 4000, hold: 2000, angles: { tBend: 0, hBend: 0, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
                     { text: "深吸氣... 雙手緩慢往上伸展", duration: 5000, hold: 3000, angles: { tBend: 0, hBend: -0.15, armL: -Math.PI * 0.65, elbowL: -0.1, armR: -Math.PI * 0.35, elbowR: 0.1, aura: 2.5 } },
@@ -153,7 +154,7 @@
                     { text: "吸氣，換左手往上，身體輕輕向右側彎", duration: 5000, hold: 3000, angles: { tBend: 0.2, hBend: 0.1, armL: -Math.PI * 0.35, elbowL: 0.2, armR: Math.PI * 0.3, elbowR: -0.2, aura: 2 } },
                     { text: "吐氣... 慢慢回到正中間", duration: 4000, hold: 2000, angles: { tBend: 0, hBend: 0, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } },
                     { text: "深吸氣，雙手向外打開，輕輕擴胸", duration: 5000, hold: 3000, angles: { tBend: 0, hBend: -0.15, armL: Math.PI * 0.9, elbowL: 0.2, armR: Math.PI * 0.1, elbowR: -0.2, aura: 2.2 } },
-                    { text: "慢慢吐氣，雙手交叉抱住自己... 給自己一個擁抱", duration: 5000, hold: 4000, angles: { tBend: 0, hBend: 0.2, armL: Math.PI * 0.2, elbowL: Math.PI * 0.5, armR: Math.PI * 0.8, elbowR: -Math.PI * 0.5, aura: 1 } }
+                    { text: "慢慢吐氣，雙手緩緩放下，感受全身的放鬆...", duration: 5000, hold: 4000, angles: { tBend: 0, hBend: 0.1, armL: Math.PI * 0.65, elbowL: 0.1, armR: Math.PI * 0.35, elbowR: -0.1, aura: 1 } }
                 ];
 
                 let currentPoseIdx = 0;
@@ -259,9 +260,10 @@
                         charCtx.fill();
                     }
 
+                    // 🏆 柔和化人物設計：調低透明度
                     charCtx.globalCompositeOperation = 'source-over';
-                    charCtx.strokeStyle = 'rgba(255, 255, 255, 1)';
-                    charCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+                    charCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    charCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                     renderSkeleton(false);
 
                     charCtx.globalCompositeOperation = 'destination-out';
@@ -325,7 +327,7 @@
                     let chestY = baseY - 120;
                     let auraRadius = 80 * currentState.aura;
                     let grad = ctx.createRadialGradient(baseX, chestY, 0, baseX, chestY, auraRadius);
-                    grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                    grad.addColorStop(0, 'rgba(255, 255, 255, 0.15)'); 
                     grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
                     ctx.fillStyle = grad;
                     ctx.beginPath();
@@ -334,8 +336,8 @@
 
                     drawFigure(currentState);
 
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                    ctx.shadowBlur = 8; // 🏆 降低光暈強度
+                    ctx.shadowColor = 'rgba(255, 255, 255, 0.2)'; 
                     ctx.drawImage(charCanvas, 0, 0);
                     ctx.shadowBlur = 0; 
 
@@ -749,11 +751,6 @@
 
             const activeStyleConfig = bubblePopStyles[activeStyle];
 
-            useEffect(() => {
-                speak('來按紓壓泡泡吧！');
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, []);
-
             const playPopSound = (isPop) => {
               try {
                 if (!globalAudioCtx) {
@@ -883,7 +880,7 @@
             );
         };
 
-        const VisualTimer = ({ seconds, font, isDark }) => {
+        const VisualTimer = ({ seconds, font, isDark, isAurora }) => {
             const [timeLeft, setTimeLeft] = useState(seconds);
             useEffect(() => {
               if (timeLeft <= 0) return;
@@ -895,6 +892,11 @@
             
             return (
               <div className="flex flex-col items-center justify-center shrink-0 relative z-10">
+                {isAurora && (
+                    <div className="absolute -top-6 md:-top-10 text-[rgba(255,255,255,0.8)] text-xs md:text-base lg:text-lg tracking-[0.2em] md:tracking-[0.3em] animate-pulse pointer-events-none drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] whitespace-nowrap">
+                        深呼吸，輕輕觸碰夜空
+                    </div>
+                )}
                 <div 
                   className={`relative w-32 h-32 md:w-56 md:h-56 lg:w-72 lg:h-72 max-w-[25vh] max-h-[25vh] aspect-square rounded-full border-8 md:border-[16px] flex items-center justify-center overflow-hidden transition-all duration-1000 shadow-lg mt-4 md:mt-8 ${isDark ? 'bg-indigo-900/30 border-indigo-900/50' : 'bg-gray-200 border-gray-100'}`}
                   style={{ background: isDark ? `conic-gradient(#818cf8 ${percentage}%, rgba(30,27,75,0.4) ${percentage}%)` : `conic-gradient(#4ADE80 ${percentage}%, #E5E7EB ${percentage}%)` }}
@@ -1012,13 +1014,11 @@
           const [focusIndex, setFocusIndex] = useState(0); 
           const [popTrigger, setPopTrigger] = useState(0); 
           
-          // 🏆 判斷是否為特殊場景模式
           const isDeepSeaMode = currentStep === 'coolDown' && selectedStrategy?.id === 'headphones';
           const isAuroraMode = currentStep === 'coolDown' && selectedStrategy?.id === 'water';
           const isStretchMode = currentStep === 'coolDown' && selectedStrategy?.id === 'stretch';
           const isDarkTheme = isDeepSeaMode || isAuroraMode || isStretchMode;
 
-          // 🏆 將負責抓取字體的函式定義在 App 內部，確保安全存取
           const getFontFamily = () => {
             switch(font) {
               case 'kai': return '"BiauKai", "DFKai-sb", serif';
@@ -1077,11 +1077,22 @@
             };
           }, []);
 
-          // 全局無差別鍵盤觸發引擎
+          // 🏆 終極鍵盤攔截引擎：防止亂按彈出視窗
           useEffect(() => {
             const handleKeyDown = (e) => {
               const state = appStateRef.current;
               const maxIndex = state.currentStep === 'coolDown' ? 4 : (state.currentStep === 'checkIn' || state.currentStep === 'strategy') ? 2 : 0;
+
+              const allowedKeys = ['F5', 'F11', 'F12', 'Escape'];
+              if (state.currentStep === 'coolDown' && state.selectedStrategy?.id === 'toy') {
+                  if (!allowedKeys.includes(e.key)) {
+                      e.preventDefault(); 
+                  }
+              } else {
+                  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                      e.preventDefault();
+                  }
+              }
 
               if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
                 setKeyboardActive(true);
@@ -1090,7 +1101,6 @@
                 setKeyboardActive(true);
                 setFocusIndex(prev => Math.min(maxIndex, prev + 1));
               } else if (e.key === 'Enter' || e.key === ' ') {
-                if (e.key === ' ') e.preventDefault();
                 setKeyboardActive(true);
                 
                 if (state.currentStep === 'coolDown' && state.selectedStrategy?.id === 'toy' && state.focusIndex === 0) {
@@ -1120,7 +1130,6 @@
             };
           }, []);
 
-          // 手把輪詢
           useEffect(() => {
             let rAF;
             let prevBtns = Array(20).fill(false);
@@ -1180,15 +1189,17 @@
           useEffect(() => {
             const loadVoices = () => {
               const availableVoices = window.speechSynthesis.getVoices();
-              let chineseVoices = availableVoices.filter(v => v.lang.includes('zh'));
+              
+              let chineseVoices = availableVoices.filter(v => {
+                  const lang = v.lang.toLowerCase();
+                  return lang.includes('zh') && !lang.includes('cn') && !lang.includes('hans');
+              });
 
               chineseVoices.sort((a, b) => {
                 const getScore = (v) => {
-                  if (v.name.includes('Google 國語') || v.name.includes('Google Mandarin')) return 10;
-                  if (v.name.includes('Mei-Jia')) return 9; 
-                  if (v.name.includes('Hanhan')) return 8;  
-                  if (v.name.includes('Xiaoxiao')) return 7; 
-                  if (v.name.includes('Yunjian')) return 6;
+                  if (v.name.includes('Google 國語 (臺灣)') || v.name.includes('Google Mandarin')) return 10;
+                  if (v.name.includes('Mei-Jia') || v.name.includes('MeiJia')) return 9; 
+                  if (v.name.includes('Hanhan') || v.name.includes('Yating') || v.name.includes('Zhiwei')) return 8;  
                   if (v.lang === 'zh-TW' || v.lang === 'zh_TW') return 5;
                   return 1; 
                 };
@@ -1264,12 +1275,12 @@
             yellow: [
               { id: 'water', icon: '🥤', label: <React.Fragment>喝口水</React.Fragment>, speech: '喝口水', toolType: 'timer', time: 10 },
               { id: 'breathe', icon: '🌬️', label: <React.Fragment>深呼吸</React.Fragment>, speech: '深呼吸', toolType: 'breathing' },
-              { id: 'stretch', icon: '🤸', label: <React.Fragment>伸展身體</React.Fragment>, speech: '跟著引導伸展身體', toolType: 'stretch', time: 15 }
+              { id: 'stretch', icon: '🧘', label: <React.Fragment>伸展身體</React.Fragment>, speech: '跟著引導伸展身體', toolType: 'stretch', time: 15 }
             ],
             red: [
               { id: 'quiet', icon: '🪑', label: <React.Fragment>去冷靜區</React.Fragment>, speech: '去冷靜區', toolType: 'timer', time: 20 },
               { id: 'headphones', icon: '🎧', label: <React.Fragment>聽音<Fix char="樂" z="ㄩㄝˋ" font={font}/></React.Fragment>, speech: '聽音樂', toolType: 'music', time: 20 },
-              { id: 'toy', icon: '🧸', label: <React.Fragment>按紓壓泡泡</React.Fragment>, speech: '來按紓壓泡泡吧！', toolType: 'popit' }
+              { id: 'toy', icon: '🧸', label: <React.Fragment>按紓壓泡泡</React.Fragment>, speech: '來按紓壓泡泡吧', toolType: 'popit' }
             ]
           };
 
@@ -1285,7 +1296,7 @@
                 speak('太棒了！保持這個好心情繼續學習吧！');
               } else {
                 setCurrentStep('strategy');
-                speak('你需要什麼幫助呢？請選一個方法。');
+                speak(`你現在是${emotion.name}，你需要什麼幫助呢？`);
               }
               setIsTransitioning(false);
             });
@@ -1411,9 +1422,9 @@
                   <div className="mb-4 md:mb-8 shrink-0 flex flex-col items-center">
                     <span className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl mb-2 md:mb-4 block drop-shadow-md">{selectedEmotion.icon}</span>
                     <div className="flex items-center justify-center gap-2 md:gap-4">
-                      <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-800">你現在是{selectedEmotion.name}，請選一個方法：</h2>
+                      <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-800">你需要什麼幫助呢？</h2>
                       <button 
-                        onClick={() => speak('請選一個方法幫助自己')}
+                        onClick={() => speak('你需要什麼幫助呢？')}
                         className={`p-1.5 md:p-3 bg-white/80 text-gray-600 rounded-full transition-colors focus:outline-none shadow-sm ${isTransitioning ? 'opacity-50' : 'hover:bg-gray-100 hover:scale-110'}`}
                         disabled={isTransitioning}
                       >
@@ -1451,11 +1462,11 @@
                 </div>
               )}
 
-              {/* 畫面三：執行冷靜 (動態判斷特效模式) */}
+              {/* 畫面三：執行冷靜 */}
               {currentStep === 'coolDown' && (
                 <div className={`w-full h-full max-w-6xl flex flex-col p-4 md:p-8 text-center rounded-3xl md:rounded-[3rem] overflow-hidden z-10 relative transition-all duration-[1000ms] ${isDarkTheme ? 'bg-transparent border-none' : 'bg-white/40 shadow-sm backdrop-blur-sm'}`}>
                   
-                  {/* 標題區 (伸展模式時隱藏標題，由背景文字引導) */}
+                  {/* 標題區 */}
                   {!isStretchMode && (
                     <h2 className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2 md:mb-4 flex justify-center items-center gap-2 md:gap-4 shrink-0 relative z-20 focus:outline-none drop-shadow-sm transition-colors ${isDarkTheme ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'text-indigo-900'}`}>
                       {selectedStrategy?.label}
